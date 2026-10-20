@@ -4,7 +4,7 @@ description: >
   Record the problem, deployment setting, metric, baseline, and fold count
   before any model code. Ask every missing decision in one turn, from `frame
   show`, and store the table with `objective set`. Does not write Python,
-  estimator hyperparameters, splitter constructors, or JOURNAL.md.
+  hyperparameters, splitters, or JOURNAL.md.
 
   TRIGGER when the user asks which metric to compare on, how new rows should
   be split, which baseline to use, or says a problem constraint changed. Not

@@ -1,14 +1,12 @@
 ---
 name: manage-ml-backlog
 description: >
-  Decide and promote experiments. `experiment decide` moves an idea among
-  idea, aside, and discarded. `experiment promote --plan` moves an idea to
-  the backlog. Outcomes are recorded by `experiment.run`, which sets history.
-  List backlog rows with `experiment list --status backlog`. Do not edit
-  JOURNAL.md, idea files, or design notes, and do not delete a row.
-  Trigger after audit, when a run finishes, when the user asks what to try
-  next or to triage idea files, or when model-ml-pipeline routes its Backlog
-  choice here. This is cadence, not a methodology owner.
+  Record experiment outcomes and triage idea files. A promoted idea moves
+  from the Ideas table into a Backlog row. `experiment decide` moves an idea
+  among idea, aside, and discarded. `experiment promote --plan` moves an idea
+  to the backlog. `experiment.run` sets history. Do not edit JOURNAL.md or
+  delete a row. Trigger after audit, when a run finishes, or when the user
+  asks what to try next.
 metadata:
   modelTier: medium
 ---

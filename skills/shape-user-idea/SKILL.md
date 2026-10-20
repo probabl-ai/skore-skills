@@ -1,10 +1,10 @@
 ---
 name: shape-user-idea
 description: >
-  Shape a user idea or a named artifact into one experiment with
-  `experiment create` after they confirm. A topic with no artifact belongs to
-  search-ml-literature. Do not edit JOURNAL.md, idea files, or a design note.
-  Do not pick a backlog row.
+  Shape a user idea or a named artifact into one idea file and one Ideas row
+  after they confirm. Store it with `experiment create`. A topic with no
+  artifact belongs to search-ml-literature. Do not edit JOURNAL.md or pick a
+  backlog row.
 metadata:
   role: helper
   modelTier: medium

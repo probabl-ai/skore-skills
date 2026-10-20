@@ -1,16 +1,12 @@
 ---
 name: model-ml-pipeline
 description: >
-  Require locked problem framing, then create or promote an experiment with
-  its plan. Coordinate later choices, build, smoke testing, evaluation, and
-  audit. On a first landing, `experiment create --plan` or
-  `experiment promote --plan` stores the plan and asks for approval. Later
-  landings offer only the choices the project justifies.
-  (an EDA proposal, Backlog, discussion). A missing modeling lock loads
-  `frame-ml-problem` and stops. After a design is approved, coordinate build
-  (pytest smoke is a build sub-step), the user's Evaluate (Recommended) /
-  Modify / Stop gate, evaluation, and audit. Not for a single action already
-  owned by evaluate, audit, or smoke debugging.
+  Require locked problem framing, write the first baseline design note for
+  approval, then coordinate later choices, build, smoke testing, evaluation,
+  and audit. Store that plan with `experiment create --plan` or `experiment
+  promote --plan`. A missing modeling lock loads `frame-ml-problem` and
+  stops. Not for a single action already owned by evaluate, audit, or smoke
+  debugging.
 metadata:
   modelTier: big
 ---

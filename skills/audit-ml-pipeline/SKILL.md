@@ -1,7 +1,8 @@
 ---
 name: audit-ml-pipeline
 description: >
-  Audit a persisted skore report read-only. Load it with `project.get(id)`
+  Audit a persisted skore report read-only and produce a reusable digest.
+  Load it with `project.get(id)`
   and read its checks and metrics. Do not copy `materialize.py` or write
   `scratch/audit`. Never call `skore.evaluate` or `project.put`.
 

@@ -1,10 +1,10 @@
 ---
 name: search-ml-literature
 description: >
-  Search scientific and technical sources and create one experiment for the
-  direction the user confirms. Comes after review, beside the backlog. Do not
-  call research-ml-practice. Do not edit JOURNAL.md, idea files, or a design
-  note. Do not pick a winner.
+  Search scientific and technical sources and write one idea file and one
+  Ideas row for the direction the user confirms. Store it with `experiment
+  create`. Do not call research-ml-practice, edit JOURNAL.md, or pick a
+  winner.
 metadata:
   modelTier: medium
 ---

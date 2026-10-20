@@ -1,10 +1,9 @@
 ---
 name: review-ml-experiment
 description: >
-  Read the stored report with `project.get`, then create one idea per issue
-  or tip with `experiment create`. Trigger after a successful evaluate, on
-  "review this stem", or when review consent is audit or proceed. Do not
-  edit JOURNAL.md, idea files, or design notes.
+  Read the stored report, then write one idea file and one Ideas row per
+  candidate. Load it with `project.get` and create each issue or tip with
+  `experiment create`. Do not edit JOURNAL.md, idea files, or design notes.
 metadata:
   modelTier: medium
 ---

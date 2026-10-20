@@ -2,14 +2,13 @@
 name: evaluate-ml-pipeline
 description: >
   Evaluate one sklearn-compatible learner with the locked validation scheme
-  by calling `experiment.run`. The splitter and any non-default score are
-  already on the DataOp from `build-ml-pipeline`. The call persists the report
-  under the experiment id and sets history. Do not write `reports/`,
-  `locator.txt`, or `id.txt`. When
-  the locked split is the training table and test table that shipped with the
-  data, fit on the training table, then pass `splitter="prefit"` with only the
-  test table. When `model-ml-pipeline` dispatched this turn, return the
-  locator. A standalone turn owns the evaluate-stage close.
+  and persist structured skore reports. Call `experiment.run`. The splitter
+  and any non-default score are already on the DataOp. The call stores the
+  report under the experiment id and sets history. Do not write `reports/`,
+  `locator.txt`, or `id.txt`. For shipped train and test tables, fit on the
+  training table and pass `splitter="prefit"` with only the test table. When
+  `model-ml-pipeline` dispatched this turn, return the locator. A standalone
+  turn owns the evaluate-stage close.
 
   TRIGGER when code calls `cross_val_score`, `cross_validate`,
   `classification_report`, `.skb.cross_validate`, or a handwritten metric

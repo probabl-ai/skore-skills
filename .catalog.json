@@ -2,7 +2,7 @@
   "name": "probabl-skills",
   "repository": "probabl-ai/skore-skills",
   "description": "Skills to support Machine Learning experimentation using the Python ecosystem.",
-  "catalog_hash": "a41d5411cbf3a915b9cb3464f2b2d3072a208509435d48aa030f948da51fd87e",
+  "catalog_hash": "7055123cadaba3956fef45d890ea66505d2c63c51290e6d4b04f1c8c26af7d85",
   "skills": [
     {
       "id": "explore-ml-data",
@@ -20,7 +20,7 @@
       "summary": "Record the problem, deployment setting, metric, baseline, and fold count before any model code.",
       "category": "methodology",
       "subcategory": null,
-      "hash": "00331c674501c592bec142df8fd932b33060eb46c7d0af5b8b0305bfb1a8cd60"
+      "hash": "81cfce7c6c46e6126e1c2ea3bb82f15fa3723ecb9c4113ccaf9c4310de4b6f87"
     },
     {
       "id": "build-ml-pipeline",
@@ -38,7 +38,7 @@
       "summary": "Evaluate one sklearn-compatible learner with the locked validation scheme and persist structured skore reports.",
       "category": "methodology",
       "subcategory": null,
-      "hash": "f982b67e92198168b328446c01e66219e8be17a29f9529902990fc4406d817df"
+      "hash": "542b115138b3d3ee76fd3b363229eb5b0610c6d427a58e4166cac6cb24c9b3f8"
     },
     {
       "id": "smoke-test-ml-pipeline",
@@ -56,7 +56,7 @@
       "summary": "Audit a persisted skore report read-only and produce a reusable digest.",
       "category": "methodology",
       "subcategory": null,
-      "hash": "af4ccbe87e2778e33cc6bb17769950d1fe2eaaf9e4c9d77dde62ddd056a3a2d8"
+      "hash": "ba3e90fc98f8456caed4004e2472ef484d3907f7ca4e4ac2a67d71e1e4662b0f"
     },
     {
       "id": "manage-ml-backlog",
@@ -65,7 +65,7 @@
       "summary": "Record experiment outcomes and triage idea files. A promoted idea moves from the Ideas table into a Backlog row.",
       "category": "action",
       "subcategory": null,
-      "hash": "43fcb8b4441663b4f77778b8e3e984de42dcb98118a930f99c2c87b51a3d359a"
+      "hash": "6a7ffb86f1c0e5cdbf2a508274eeeead4355f3ea1357324802098043c07d8746"
     },
     {
       "id": "triage-ml-task",
@@ -92,7 +92,7 @@
       "summary": "Read the stored report, then write one idea file and one Ideas row per candidate.",
       "category": "meta",
       "subcategory": null,
-      "hash": "44762cc86c3a8e0a58c09db732339da79d15c29d11abb9dfdb136cff9ad8ebda"
+      "hash": "9910db5bc775f118cc2ad645504a2525e67b63d49f44800c65af223da62cc299"
     },
     {
       "id": "shape-user-idea",
@@ -101,7 +101,7 @@
       "summary": "Shape a user idea or a named artifact into one idea file and one Ideas row after they confirm.",
       "category": "meta",
       "subcategory": null,
-      "hash": "655ea068fd2c2e659591b77c30d814d9f3dfb415380427d95b792be47cf7889e"
+      "hash": "333a05f846675b184129f653b456f9f531ee5fea914141b17506a542cf96e8d0"
     },
     {
       "id": "search-ml-literature",
@@ -110,7 +110,7 @@
       "summary": "Search scientific and technical sources and write one idea file and one Ideas row for the direction the user confirms.",
       "category": "meta",
       "subcategory": null,
-      "hash": "3d85fe3751545d7d38c07c048657ee542b6794dd82a4eaf5f71f69485659174c"
+      "hash": "0e38b8a121dc415af052da065cc6b14a478ca0399164e24cc703f2d691bb3a55"
     },
     {
       "id": "setup-ml-project",
@@ -146,7 +146,7 @@
       "summary": "Require locked problem framing, write the first baseline design note for approval, then coordinate later choices, build, smoke testing, evaluation, and audit.",
       "category": "meta",
       "subcategory": null,
-      "hash": "0fd61542672aacdf95e234a6606a165d16c67283190de3e6a126616a60fd802f"
+      "hash": "ac5e5d9f24a2b48ead28a6134015a965a87a67f3c1300cfb5a4a4693f9fd5c15"
     },
     {
       "id": "choose-python-library",

@@ -48,6 +48,33 @@ def design_consent(root: Path, stem: str) -> dict[str, Any]:
     if not cleaned:
         raise ValueError("stem is required")
 
+    from skore_skills.project_api import experiment_by_stem
+
+    experiment = experiment_by_stem(root, cleaned)
+    if experiment is not None:
+        if experiment.status in {"backlog", "history"}:
+            return {
+                "stem": cleaned,
+                "action": "proceed",
+                "reason": "approved" if experiment.status == "backlog" else "done",
+            }
+        if experiment.status == "discarded":
+            return {"stem": cleaned, "action": "stop", "reason": "abandoned"}
+        return {
+            "stem": cleaned,
+            "action": "ask",
+            "reason": "first_approval",
+            "choices": list(_ASK_CHOICES),
+            "context": {
+                "note": experiment.id,
+                "question": experiment.question,
+                "source": experiment.source_id or "",
+                "files_touched": "",
+                "change": experiment.plan or "",
+                "risks": [],
+            },
+        }
+
     path = root / "journal" / f"{cleaned}.md"
     if not path.is_file():
         return {"stem": cleaned, "action": "stop", "reason": "missing_design"}

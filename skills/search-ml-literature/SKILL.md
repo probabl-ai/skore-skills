@@ -1,15 +1,20 @@
 ---
 name: search-ml-literature
 description: >
-  Search scientific and technical sources and write one idea file and one
-  Ideas row for the direction the user confirms. Comes after review, beside
-  the backlog. Do not call research-ml-practice. Do not write History,
-  Backlog, or a design note. Do not pick a winner.
+  Search scientific and technical sources and create one experiment for the
+  direction the user confirms. Comes after review, beside the backlog. Do not
+  call research-ml-practice. Do not edit JOURNAL.md, idea files, or a design
+  note. Do not pick a winner.
 metadata:
   modelTier: medium
 ---
 
 # Search ML Literature
+
+Store a confirmed direction with
+`python -m skore_skills experiment create --stem <stem> --question "<question>"`.
+Do not edit `JOURNAL.md`, an idea file, or a design note. If a later step
+says to write those files, skip that step and use `experiment create`.
 
 Comes after review, beside the backlog. Source is a query, not an
 artifact the user already named. Show a few directions, then write

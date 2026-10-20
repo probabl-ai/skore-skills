@@ -31,6 +31,27 @@ def loop_artifacts(root: Path, stem: str) -> dict[str, Any]:
     cleaned = stem.strip()
     if not cleaned:
         raise ValueError("stem is required")
+    from skore_skills.project_api import experiment_by_stem
+
+    experiment = experiment_by_stem(root, cleaned)
+    if experiment is not None:
+        report_stored = False
+        try:
+            report_stored = experiment._project.get(experiment.id) is not None
+        except Exception:
+            report_stored = False
+        if experiment.status == "history" and report_stored:
+            action, reason = "record", "report_stored"
+        elif experiment.status == "backlog":
+            action, reason = "evaluate_incomplete", "ready_to_run"
+        else:
+            action, reason = "stop", f"status_{experiment.status}"
+        return {
+            "stem": cleaned,
+            "action": action,
+            "reason": reason,
+            "files": {"report": report_stored},
+        }
     results = _results_dir(root, cleaned)
     smoke = root / "tests" / "smoke" / f"test_{cleaned}.py"
     experiment = root / "experiments" / f"{cleaned}.py"
@@ -80,6 +101,16 @@ def loop_locator(root: Path, stem: str) -> dict[str, Any]:
     cleaned = stem.strip()
     if not cleaned:
         raise ValueError("stem is required")
+    from skore_skills.project_api import experiment_by_stem
+
+    experiment = experiment_by_stem(root, cleaned)
+    if experiment is not None and experiment.status == "history":
+        return {
+            "stem": cleaned,
+            "action": "proceed",
+            "reason": "experiment",
+            "locator": experiment.id,
+        }
     path = _results_dir(root, cleaned) / "locator.txt"
     if path.is_file():
         text = path.read_text(encoding="utf-8").strip()

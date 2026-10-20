@@ -1,15 +1,24 @@
 ---
 name: review-ml-experiment
 description: >
-  Read the stored report, then write one idea file and one Ideas row per
-  candidate. Trigger after a successful evaluate, on "review
-  this stem", or when review consent is audit or proceed. Do not write
-  History, Backlog, or a design note.
+  Read the stored report with `project.get`, then create one idea per issue
+  or tip with `experiment create`. Trigger after a successful evaluate, on
+  "review this stem", or when review consent is audit or proceed. Do not
+  edit JOURNAL.md, idea files, or design notes.
 metadata:
   modelTier: medium
 ---
 
 # Review ML Experiment
+
+The project is the only store. Load the report with `project.get(experiment_id)`.
+Create each issue or tip with
+`python -m skore_skills experiment create --stem <stem> --question "<question>" --source-id <id> --check-code <code>`.
+Read the journal with `python -m skore_skills journal show`. Do not edit
+`JOURNAL.md`, `journal/ideas/`, or a design note. Scripts used to inspect the
+report may live in a temporary directory and are deleted after the turn.
+If a later step says to edit `JOURNAL.md`, an idea file, or a design note,
+skip that step and use the commands above.
 
 Optional loop step after evaluate. Record-outcome stays with the
 caller. This skill writes idea files and their Ideas rows. The

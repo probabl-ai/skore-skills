@@ -112,10 +112,8 @@ sync table.
    match the paired experiment, byte-for-byte modulo formatting).
    If dest is **local**, `mkdir reports` (`exist_ok`); no README.
    If **hub** or **mlflow**, do not create `reports/`.
-   If `journal/JOURNAL.md` exists, insert a `---` under History
-   and one line `skore_mode: <old> → <dest> (sync-ml-reports)`.
-   Missing journal → skip in one line; do not paste a JOURNAL
-   body.
+   Do not edit `JOURNAL.md`. `Project.sync` copies the objective
+   and the experiment rows.
 
    **Copy-only:** do not `policy set`, rewrite init, mkdir, or
    edit JOURNAL.

@@ -2,9 +2,10 @@
 name: evaluate-ml-pipeline
 description: >
   Evaluate one sklearn-compatible learner with the locked validation scheme
-  and persist structured skore reports. The splitter and any non-default score
-  are already on the DataOp from `build-ml-pipeline`. This skill writes the
-  call without `splitter=`, persists the report, and records the locator. When
+  by calling `experiment.run`. The splitter and any non-default score are
+  already on the DataOp from `build-ml-pipeline`. The call persists the report
+  under the experiment id and sets history. Do not write `reports/`,
+  `locator.txt`, or `id.txt`. When
   the locked split is the training table and test table that shipped with the
   data, fit on the training table, then pass `splitter="prefit"` with only the
   test table. When `model-ml-pipeline` dispatched this turn, return the
@@ -24,6 +25,13 @@ metadata:
 ---
 
 # Evaluate ML Pipeline
+
+Persistence is `experiment.run(estimator, X, y, ...)`. That call stores the
+report under the experiment id and moves the row to history. Do not create
+`reports/`, `locator.txt`, or `id.txt`. The locator is the UUID7. The script
+that launches the run may live in a temporary directory and is deleted after
+the turn. Do not edit `JOURNAL.md` or a design note. If a later step says
+to edit those files or to write a locator file, skip that step.
 
 Score one learner and persist the report. The pipeline, the
 splitter, and any non-default score are already declared.

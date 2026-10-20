@@ -133,6 +133,7 @@ def test_status_organized_fixture(
             "pending": ["env", "editable", "git"],
         },
         "loop_stage": "implement",
+        "workspace": "durable",
     }
     assert skills
     assert all(value is False for value in skills.values())

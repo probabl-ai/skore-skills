@@ -154,11 +154,6 @@ def scaffold(root: Path, package: str, *, force: bool = False) -> list[Path]:
         raw = (templates / name).read_text(encoding="utf-8")
         write(dest, render_template(raw, package))
 
-    journal = files("skore_skills").joinpath("data/JOURNAL.md")
-    write(
-        Path("journal") / "JOURNAL.md",
-        render_template(journal.read_text(encoding="utf-8"), package),
-    )
     from skore_skills.style import ensure_ruff_in_pyproject
 
     pyproject_path = root / "pyproject.toml"
@@ -179,28 +174,8 @@ def scaffold_journal(
     stem: str | None = None,
     force: bool = False,
 ) -> list[Path]:
-    """Initialize the journal index and optionally one experiment design note."""
+    """Journal files are rendered from the project. Nothing is authored here."""
+    del root, force
     if stem is not None and re.fullmatch(r"\d{2}_[a-z0-9][a-z0-9_]*", stem) is None:
         raise ValueError(INVALID_STEM)
-
-    data = files("skore_skills").joinpath("data")
-    journal_dir = root / "journal"
-    journal_dir.mkdir(parents=True, exist_ok=True)
-    written: list[Path] = []
-
-    index = journal_dir / "JOURNAL.md"
-    if force or not index.exists():
-        index.write_text(
-            data.joinpath("JOURNAL.md").read_text(encoding="utf-8"),
-            encoding="utf-8",
-        )
-        written.append(Path("journal/JOURNAL.md"))
-
-    if stem is not None:
-        design = journal_dir / f"{stem}.md"
-        if design.exists() and not force:
-            raise ValueError(f"refusing to overwrite {design.relative_to(root)}")
-        body = data.joinpath("experiment_design.md").read_text(encoding="utf-8")
-        design.write_text(body.replace("<NN>_<short_name>", stem), encoding="utf-8")
-        written.append(Path("journal") / f"{stem}.md")
-    return written
+    return []

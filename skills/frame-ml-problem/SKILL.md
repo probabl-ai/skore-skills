@@ -3,8 +3,8 @@ name: frame-ml-problem
 description: >
   Record the problem, deployment setting, metric, baseline, and fold count
   before any model code. Ask every missing decision in one turn, from `frame
-  show`. Does not write Python, estimator hyperparameters, or splitter
-  constructors.
+  show`, and store the table with `objective set`. Does not write Python,
+  estimator hyperparameters, splitter constructors, or JOURNAL.md.
 
   TRIGGER when the user asks which metric to compare on, how new rows should
   be split, which baseline to use, or says a problem constraint changed. Not
@@ -23,6 +23,11 @@ metadata:
 ---
 
 # Frame ML Problem
+
+Store the modeling-decisions table with
+`python -m skore_skills objective set "<table>"`. Do not edit `JOURNAL.md`
+or write a design note. If a later step says to edit `JOURNAL.md`, skip
+that step and use `objective set`.
 
 Write `## Modeling decisions` in `journal/JOURNAL.md`. The table
 is the contract. This skill does not declare a learner and does

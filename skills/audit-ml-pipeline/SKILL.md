@@ -1,9 +1,9 @@
 ---
 name: audit-ml-pipeline
 description: >
-  Audit a persisted skore report read-only and produce a reusable digest. Do
-  not execute it. Run `materialize.py` once. Never call `skore.evaluate` or
-  `project.put`.
+  Audit a persisted skore report read-only. Load it with `project.get(id)`
+  and read its checks and metrics. Do not copy `materialize.py` or write
+  `scratch/audit`. Never call `skore.evaluate` or `project.put`.
 
   TRIGGER when a completed run needs an audit, the user asks to audit, show,
   or re-audit an experiment, a re-run overwrote the same `put()` key, or they
@@ -24,6 +24,13 @@ metadata:
 ---
 
 # Audit ML Pipeline
+
+Load the report with `project.get(experiment_id)`. Read its checks and
+metrics from that object. Do not require `audit/<stem>.py`, `materialize.py`,
+or `scratch/audit`. A temporary directory may hold notes for this turn and
+is deleted afterward. Do not edit `JOURNAL.md` or a design note. If a
+later step says to write `scratch/audit` or `audit/<stem>.py`, skip it
+and read the stored report.
 
 Per-experiment, human-readable narrative of a skore report. The
 `# %%` file is the human notebook and is not executed. `materialize.py`

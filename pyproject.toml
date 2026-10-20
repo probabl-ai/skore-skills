@@ -109,4 +109,6 @@ module = [
     "nbformat",
     "nbconvert",
     "ipywidgets",
+    "skore",
+    "skore.*",
 ]

@@ -2,7 +2,7 @@
   "name": "probabl-skills",
   "repository": "probabl-ai/skore-skills",
   "description": "Skills to support Machine Learning experimentation using the Python ecosystem.",
-  "catalog_hash": "93da29b569090cf0e0ae84bde8415fad80015fcdb7169f67ecabd52b85a86ad8",
+  "catalog_hash": "a41d5411cbf3a915b9cb3464f2b2d3072a208509435d48aa030f948da51fd87e",
   "skills": [
     {
       "id": "explore-ml-data",
@@ -11,7 +11,7 @@
       "summary": "Explore the dataset before designing any model.",
       "category": "methodology",
       "subcategory": null,
-      "hash": "cbfbbbb27f88154492cb53361f6a1790d211e93144a1d8763383f05527ce405a"
+      "hash": "89ef6d473f93f881dfab3af29973f7c83d4db8757b6b088b5a164d7ba90be452"
     },
     {
       "id": "frame-ml-problem",
@@ -20,7 +20,7 @@
       "summary": "Record the problem, deployment setting, metric, baseline, and fold count before any model code.",
       "category": "methodology",
       "subcategory": null,
-      "hash": "dbdba3aec11308c10336202ae21d308c52a97533108b5a732182d52d06612167"
+      "hash": "00331c674501c592bec142df8fd932b33060eb46c7d0af5b8b0305bfb1a8cd60"
     },
     {
       "id": "build-ml-pipeline",
@@ -29,7 +29,7 @@
       "summary": "Declare a skrub DataOps graph from the data source to the predictor after framing is locked.",
       "category": "methodology",
       "subcategory": null,
-      "hash": "744f08c7d901681ed6e3c4bb65d10c3e6bf76921d4011cff528331286b686680"
+      "hash": "e133b098a488e60e5044e704f13a6197973b9043ea38786bfb4a9a3b0fc46bb3"
     },
     {
       "id": "evaluate-ml-pipeline",
@@ -38,7 +38,7 @@
       "summary": "Evaluate one sklearn-compatible learner with the locked validation scheme and persist structured skore reports.",
       "category": "methodology",
       "subcategory": null,
-      "hash": "66090490c729df2efd2b4c6e2d4a7dc3e1ae6ad20d4c88b8f05ea65d6756d02e"
+      "hash": "f982b67e92198168b328446c01e66219e8be17a29f9529902990fc4406d817df"
     },
     {
       "id": "smoke-test-ml-pipeline",
@@ -47,7 +47,7 @@
       "summary": "Structural pytest: prediction count must match the predict-grid row count.",
       "category": "methodology",
       "subcategory": null,
-      "hash": "a942f1195955f6c8e4600a11f5482d182ac590838e0dc050c29b81570cc715a0"
+      "hash": "8cdcdd4acdf2cdbde17ff8c1fa9a6b82f22ed915ce71bc470c4735c66a386c66"
     },
     {
       "id": "audit-ml-pipeline",
@@ -56,7 +56,7 @@
       "summary": "Audit a persisted skore report read-only and produce a reusable digest.",
       "category": "methodology",
       "subcategory": null,
-      "hash": "0bf240473fb2bcb7f53cca863ff37698f0e5b3c4197b533c3ec9a1df2dab4918"
+      "hash": "af4ccbe87e2778e33cc6bb17769950d1fe2eaaf9e4c9d77dde62ddd056a3a2d8"
     },
     {
       "id": "manage-ml-backlog",
@@ -65,7 +65,7 @@
       "summary": "Record experiment outcomes and triage idea files. A promoted idea moves from the Ideas table into a Backlog row.",
       "category": "action",
       "subcategory": null,
-      "hash": "13499b190843039db568640f814fbb97e49c64c4e82445a64c763ec1dd5afcd3"
+      "hash": "43fcb8b4441663b4f77778b8e3e984de42dcb98118a930f99c2c87b51a3d359a"
     },
     {
       "id": "triage-ml-task",
@@ -92,7 +92,7 @@
       "summary": "Read the stored report, then write one idea file and one Ideas row per candidate.",
       "category": "meta",
       "subcategory": null,
-      "hash": "a9cc94e669bed21b2a3440769cf0ee60f6357f77e9f9169716b409b76169e2d4"
+      "hash": "44762cc86c3a8e0a58c09db732339da79d15c29d11abb9dfdb136cff9ad8ebda"
     },
     {
       "id": "shape-user-idea",
@@ -101,7 +101,7 @@
       "summary": "Shape a user idea or a named artifact into one idea file and one Ideas row after they confirm.",
       "category": "meta",
       "subcategory": null,
-      "hash": "1963b6cc2b372bc18818f6f3703567a9693d1b5e9e4ca82f2fefa0e81d666d13"
+      "hash": "655ea068fd2c2e659591b77c30d814d9f3dfb415380427d95b792be47cf7889e"
     },
     {
       "id": "search-ml-literature",
@@ -110,7 +110,7 @@
       "summary": "Search scientific and technical sources and write one idea file and one Ideas row for the direction the user confirms.",
       "category": "meta",
       "subcategory": null,
-      "hash": "4705515219c4b71873d51b363aed86ad836855053abdf1d3ff14a1bd8deb62a4"
+      "hash": "3d85fe3751545d7d38c07c048657ee542b6794dd82a4eaf5f71f69485659174c"
     },
     {
       "id": "setup-ml-project",
@@ -146,7 +146,7 @@
       "summary": "Require locked problem framing, write the first baseline design note for approval, then coordinate later choices, build, smoke testing, evaluation, and audit.",
       "category": "meta",
       "subcategory": null,
-      "hash": "c94cac0e177624e488e85fb130eb65d902cacec0904580c36e83bcef035ae71f"
+      "hash": "0fd61542672aacdf95e234a6606a165d16c67283190de3e6a126616a60fd802f"
     },
     {
       "id": "choose-python-library",
@@ -236,7 +236,7 @@
       "summary": "Copy skore reports between local, Hub, and MLflow, and optionally switch the upload destination.",
       "category": "action",
       "subcategory": null,
-      "hash": "66ba8a564145ef82152999340c9e5f0f4eaf7aaae08f5737bddfa300898e0ff3"
+      "hash": "02f8c654a3ad8e32900c093b2982e43d1cb489acf8db01c2ecf885b68040aece"
     }
   ],
   "workflows": [

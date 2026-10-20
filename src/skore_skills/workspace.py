@@ -329,9 +329,7 @@ def snapshot(root: Path) -> dict[str, Any]:
     if temporary:
         payload["setup"]["workspace"] = "done"
         payload["setup"]["pending"] = [
-            piece
-            for piece in payload["setup"]["pending"]
-            if piece != "workspace"
+            piece for piece in payload["setup"]["pending"] if piece != "workspace"
         ]
     return payload
 

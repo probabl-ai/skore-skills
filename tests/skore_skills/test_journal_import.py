@@ -16,7 +16,7 @@ JOURNAL = """\
 
 | Stem | Intent | Status | Headline result | Report | Design note |
 | --- | --- | --- | --- | --- | --- |
-| 01_dummy | What MAE does a constant predictor reach? | done | rmse=1.2 | old | DummyRegressor. |
+| 01_dummy | What MAE does a constant reach? | done | rmse=1.2 | old | Plan. |
 
 ## Backlog
 
@@ -37,6 +37,7 @@ JOURNAL = """\
 def test_journal_import_round_trips_the_three_tables(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    pytest.importorskip("skore.agent")
     monkeypatch.chdir(tmp_path)
     journal = tmp_path / "journal"
     journal.mkdir()
@@ -48,7 +49,7 @@ def test_journal_import_round_trips_the_three_tables(
     shown = CliRunner().invoke(cli, ["journal", "show"])
     assert shown.exit_code == 0, shown.output
     text = shown.output
-    assert "What MAE does a constant predictor reach?" in text
+    assert "What MAE does a constant reach?" in text
     assert "| done |" in text or "| done |" in text.replace(" ", "")
     assert "Fit a linear model." in text
     assert "| B1 |" in text

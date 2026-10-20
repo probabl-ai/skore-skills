@@ -929,8 +929,6 @@ def experiment_promote(experiment_id: str, plan: str) -> None:
 @click.option("--status", default=None)
 def experiment_list(status: str | None) -> None:
     """Print the experiments frame as JSON."""
-    import json
-
     from skore_skills.project_api import open_project
 
     frame = open_project(Path.cwd()).experiments.frame

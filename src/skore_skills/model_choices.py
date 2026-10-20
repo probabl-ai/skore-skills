@@ -46,9 +46,15 @@ def _journal_facts(root: Path) -> tuple[set[str], list[dict[str, str]], bool]:
 
     if project_ready(root):
         frame = open_project(root).experiments.frame
-        history_stems = set(frame.loc[frame["status"].eq("history"), "stem"].astype(str))
+        history_stems = set(
+            frame.loc[frame["status"].eq("history"), "stem"].astype(str)
+        )
         backlog = [
-            {"id": f"B{number}", "item": str(row["question"]), "source": str(row["stem"])}
+            {
+                "id": f"B{number}",
+                "item": str(row["question"]),
+                "source": str(row["stem"]),
+            }
             for number, (_, row) in enumerate(
                 frame.loc[frame["status"].eq("backlog")].iterrows(), start=1
             )

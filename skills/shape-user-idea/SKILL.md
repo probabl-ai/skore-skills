@@ -2,15 +2,22 @@
 name: shape-user-idea
 description: >
   Shape a user idea or a named artifact into one idea file and one Ideas row
-  after they confirm. A topic with no artifact belongs to
-  search-ml-literature. Do not write History, Backlog, or a design note. Do
-  not pick a backlog row.
+  after they confirm. Store it with `experiment create`. A topic with no
+  artifact belongs to search-ml-literature. Do not edit JOURNAL.md or pick a
+  backlog row.
 metadata:
   role: helper
   modelTier: medium
 ---
 
 # Shape User Idea
+
+Store a confirmed idea with
+`python -m skore_skills experiment create --stem <stem> --question "<question>"`.
+Leave `--plan` unset so the row stays an idea, and omit `--source-id` for a
+user idea. Do not edit `JOURNAL.md`, `journal/ideas/`, or a design note.
+If a later step says to write those files, skip that step and use
+`experiment create`.
 
 Comes after review, beside the backlog. The user already has an
 idea, a question, or an artifact. This skill writes

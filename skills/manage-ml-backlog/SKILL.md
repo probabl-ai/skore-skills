@@ -1,20 +1,26 @@
 ---
 name: manage-ml-backlog
 description: >
-  Record experiment outcomes and triage idea files. A promoted idea moves from
-  the Ideas table into a Backlog row. Record an experiment outcome in History
-  and triage idea files. Summarize open, discarded, and aside ideas in the
-  JOURNAL Ideas table. Move a row into Backlog when it is promoted, and keep
-  the idea file. Also supports the model-entry selection mode: show real B<N>
-  rows supplied by the deterministic CLI and consume one into a proposal.
-  Trigger after audit, when a run finishes, when the user asks what to try
-  next or to triage idea files, or when model-ml-pipeline routes its Backlog
-  choice here. This is cadence, not a methodology owner.
+  Record experiment outcomes and triage idea files. A promoted idea moves
+  from the Ideas table into a Backlog row. `experiment decide` moves an idea
+  among idea, aside, and discarded. `experiment promote --plan` moves an idea
+  to the backlog. `experiment.run` sets history. Do not edit JOURNAL.md or
+  delete a row. Trigger after audit, when a run finishes, or when the user
+  asks what to try next.
 metadata:
   modelTier: medium
 ---
 
 # Manage ML Backlog
+
+The project is the only store. Triage with
+`python -m skore_skills experiment decide <id> aside` or `discarded`.
+Promote with `python -m skore_skills experiment promote <id> --plan "<plan>"`.
+List choices with `python -m skore_skills experiment list --status backlog`.
+`journal show` derives the headline and the report locator. Do not copy them
+into a file, and do not edit `JOURNAL.md`, idea files, or design notes.
+If a later step says to edit those files, skip that step and use the
+commands above.
 
 Replace iterate-as-cadence. Do not own setup, exploratory data
 analysis, build, smoke,

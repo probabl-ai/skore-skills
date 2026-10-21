@@ -25,6 +25,11 @@ metadata:
 
 # Smoke Test ML Pipeline
 
+Run the smoke test in a temporary directory. A red test does not call
+`experiment.run` and does not change the experiment status. Deleting the
+directory afterward is success when no report was supposed to be stored.
+Do not edit `JOURNAL.md` or a design note.
+
 The minimal pytest that catches the "load → featurize → split"
 anti-pattern at iteration time, before it reaches production.
 

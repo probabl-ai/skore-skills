@@ -3,8 +3,9 @@ name: explore-ml-data
 description: >
   Explore the dataset before designing any model. Place
   `data_analysis/data_analysis.py` and do not execute it. Run `materialize.py`
-  once, write `data_analysis.md` and JOURNAL § Data understanding. Never
-  design the model, edit `src/<pkg>/`, or modify raw data files.
+  once, write `data_analysis.md`, and put the short summary in the project
+  objective. Never design the model, edit `src/<pkg>/`, edit JOURNAL.md, or
+  modify raw data files.
 
   TRIGGER when the user asks to explore, profile, or understand the data;
   triage sent them here (`status.data_analysis` missing); a data source
@@ -24,6 +25,12 @@ metadata:
 ---
 
 # Explore ML Data
+
+Keep writing `data_analysis/data_analysis.md`. Put the short summary in the
+project with `python -m skore_skills objective set "<summary>"`. Do not edit
+`JOURNAL.md`. The analysis files may live in a temporary directory.
+If a later step says to edit `JOURNAL.md`, skip that step and use
+`objective set`.
 
 One project-level exploratory data analysis: a notebook the user
 can open, HTML reports, a short `data_analysis.md` that embeds

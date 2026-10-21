@@ -80,7 +80,22 @@ def _empty(value: str) -> bool:
     return text.startswith("<") and text.endswith(">")
 
 
+def _objective_text(root: Path) -> str:
+    from skore_skills.project_api import open_project, project_ready
+
+    if not project_ready(root):
+        return ""
+    try:
+        return open_project(root).objective or ""
+    except Exception:
+        return ""
+
+
 def _section_text(root: Path) -> str:
+    objective = _objective_text(root)
+    if "## Modeling decisions" in objective:
+        match = _SECTION.search(objective)
+        return match.group(1) if match else ""
     path = root / "journal" / "JOURNAL.md"
     if not path.is_file():
         return ""
@@ -444,8 +459,8 @@ def frame_show(root: Path, *, revise: bool = False) -> dict[str, Any]:
     Filesystem only: ``journal/JOURNAL.md`` and, when present,
     ``scratch/data_analysis/extras.json``. Does not write either file.
     """
-    journal = root / "journal"
-    if not journal.is_dir() or not (journal / "JOURNAL.md").is_file():
+    journal = root / "journal" / "JOURNAL.md"
+    if not journal.is_file() and "## Modeling decisions" not in _objective_text(root):
         return {"action": "stop", "reason": "missing_scaffold"}
 
     rows = _raw_rows(root)
@@ -590,14 +605,18 @@ def frame_clear(root: Path, cell: str, *, today: date | None = None) -> dict[str
     if cell not in decision_keys:
         raise ValueError(f"unknown framing cell: {cell}")
     path = root / "journal" / "JOURNAL.md"
-    if not path.is_file():
+    objective = _objective_text(root)
+    if "## Modeling decisions" in objective:
+        text = objective
+    elif path.is_file():
+        text = path.read_text(encoding="utf-8")
+    else:
         raise ValueError("journal is missing")
     rows = _raw_rows(root)
     value = rows[cell].strip()
     if _empty(value) or value == "n/a":
         raise ValueError(f"{cell} is empty")
     blanked = _blank_keys(cell, rows)
-    text = path.read_text(encoding="utf-8")
     start, end, section = _section_span(text)
     present = _row_keys(section)
     required = ("status", "revised_on", *blanked)
@@ -610,7 +629,15 @@ def frame_clear(root: Path, cell: str, *, today: date | None = None) -> dict[str
     updates["status"] = "draft"
     updates["revised_on"] = revised
     cleared = text[:start] + _apply_updates(section, updates) + text[end:]
-    path.write_text(cleared, encoding="utf-8")
+    if path.is_file() and "## Modeling decisions" not in objective:
+        path.write_text(cleared, encoding="utf-8")
+    from skore_skills.project_api import open_project
+
+    try:
+        open_project(root).objective = cleared
+    except Exception:
+        if not path.is_file():
+            raise
     return {
         "action": "cleared",
         "cell": cell,

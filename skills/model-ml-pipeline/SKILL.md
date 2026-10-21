@@ -3,18 +3,24 @@ name: model-ml-pipeline
 description: >
   Require locked problem framing, write the first baseline design note for
   approval, then coordinate later choices, build, smoke testing, evaluation,
-  and audit. On a first landing, write the locked baseline design note and ask
-  for approval. Later landings offer only the choices the workspace justifies
-  (an EDA proposal, Backlog, discussion). A missing modeling lock loads
-  `frame-ml-problem` and stops. After a design is approved, coordinate build
-  (pytest smoke is a build sub-step), the user's Evaluate (Recommended) /
-  Modify / Stop gate, evaluation, and audit. Not for a single action already
-  owned by evaluate, audit, or smoke debugging.
+  and audit. Store that plan with `experiment create --plan` or `experiment
+  promote --plan`. A missing modeling lock loads `frame-ml-problem` and
+  stops. Not for a single action already owned by evaluate, audit, or smoke
+  debugging.
 metadata:
   modelTier: big
 ---
 
 # Model ML Pipeline
+
+Store a plan with
+`python -m skore_skills experiment promote <id> --plan "<plan>"` or
+`python -m skore_skills experiment create --stem <stem> --question "<question>" --plan "<plan>"`.
+Do not write a design note or edit `JOURNAL.md`. Build, smoke, evaluation,
+and audit may use a temporary directory. A red smoke test does not call
+`experiment.run` and leaves the row in the backlog. Delete the directory
+when the turn ends. If a later step says to write a design note or edit
+`JOURNAL.md`, skip that step and use the commands above.
 
 This meta skill owns selection and ordering, not child methodology.
 Do not load `smoke-test-ml-pipeline` as a sibling of evaluate.

@@ -18,6 +18,18 @@ def review_consent(root: Path, stem: str) -> dict[str, Any]:
     if not cleaned:
         raise ValueError("stem is required")
 
+    from skore_skills.project_api import experiment_by_stem
+
+    experiment = experiment_by_stem(root, cleaned)
+    if experiment is not None:
+        if experiment.status != "history":
+            return {"stem": cleaned, "action": "stop", "reason": "report_missing"}
+        try:
+            experiment._project.get(experiment.id)
+        except Exception:
+            return {"stem": cleaned, "action": "stop", "reason": "report_missing"}
+        return {"stem": cleaned, "action": "audit", "reason": "stored_report"}
+
     report = root / "scratch" / "results" / cleaned / "report.html"
     if not report.is_file():
         return {

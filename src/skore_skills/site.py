@@ -171,6 +171,9 @@ def result_report_source(root: Path, stem: str, kind: str) -> Path | None:
 
 def collect_pages(root: Path) -> list[Page]:
     """Return Markdown report pages; notebooks are pages of their own."""
+    from skore_skills.journal_api import render_if_project_has_content
+
+    render_if_project_has_content(root)
     pages: list[Page] = []
     journal = root / "journal" / "JOURNAL.md"
     if journal.is_file():

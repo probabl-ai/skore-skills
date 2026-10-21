@@ -49,22 +49,7 @@ def test_scaffold_tree_and_no_placeholders(
     assert "!.gitignore" in gitignore
     pyproject = (tmp_path / "pyproject.toml").read_text(encoding="utf-8")
     assert not (tmp_path / "ruff.toml").exists()
-    assert (tmp_path / "journal" / "JOURNAL.md").is_file()
-    journal = (tmp_path / "journal" / "JOURNAL.md").read_text(encoding="utf-8")
-    assert "## History" in journal
-    assert "## Ideas" in journal
-    assert "## Backlog" in journal
-    assert (
-        journal.index("## History")
-        < journal.index("## Ideas")
-        < journal.index("## Backlog")
-    )
-    assert "| Question | Status | Experiment | Source |" in journal
-    assert "[data_analysis/data_analysis.md]" in journal
-    assert "Workspace decisions" not in journal
-    assert "| Project / dataset |" in journal
-    assert "| Variable | Value |" in journal
-    assert "| Headline result | Report | Design note |" in journal
+    assert not (tmp_path / "journal" / "JOURNAL.md").exists()
     assert "[tool.ruff]" in pyproject
     assert '"data_analysis/**"' in pyproject
     assert 'name = "demo-pkg"' in pyproject
@@ -105,7 +90,7 @@ def test_scaffold_on_manager_only_root(
     result = CliRunner().invoke(cli, ["scaffold", "--package", "demo_pkg"])
     assert result.exit_code == 0, result.output
     assert (tmp_path / "src" / "demo_pkg" / "pipeline.py").is_file()
-    assert (tmp_path / "journal" / "JOURNAL.md").is_file()
+    assert not (tmp_path / "journal" / "JOURNAL.md").exists()
     kept = pyproject.read_text(encoding="utf-8")
     assert '[project]\nname = "demo"\n' in kept
     assert "[tool.ruff]" in kept
@@ -206,26 +191,8 @@ def test_scaffold_journal_index_and_design(
         ["scaffold", "--journal", "--stem", "02_target_transform"],
     )
     assert result.exit_code == 0, result.output
-    journal = tmp_path / "journal" / "JOURNAL.md"
-    design = tmp_path / "journal" / "02_target_transform.md"
-    journal_text = journal.read_text(encoding="utf-8")
-    design_text = design.read_text(encoding="utf-8")
-    assert "## History" in journal_text
-    assert "## Ideas" in journal_text
-    assert (
-        journal_text.index("## History")
-        < journal_text.index("## Ideas")
-        < journal_text.index("## Backlog")
-    )
-    assert "| Headline result | Report | Design note |" in journal_text
-    assert design_text.startswith("# 02_target_transform\n")
-    assert "- **Persisted report:**" in design_text
-    assert "- **Audit findings:** n/a — audit not run" in design_text
-    assert design_text.count("## Notebooks") == 1
-    assert design_text.index("### Evaluation notebook") < design_text.index(
-        "### Audit notebook"
-    )
-    assert "## Results" not in design_text
+    assert not (tmp_path / "journal" / "JOURNAL.md").exists()
+    assert not (tmp_path / "journal" / "02_target_transform.md").exists()
 
 
 def test_scaffold_journal_preserves_index_and_refuses_existing_design(
@@ -243,8 +210,7 @@ def test_scaffold_journal_preserves_index_and_refuses_existing_design(
         cli,
         ["scaffold", "--journal", "--stem", "01_baseline"],
     )
-    assert result.exit_code != 0
-    assert "refusing to overwrite" in result.output
+    assert result.exit_code == 0, result.output
     assert index.read_text(encoding="utf-8") == "# Existing\n"
     assert design.read_text(encoding="utf-8") == "# Existing design\n"
     forced = CliRunner().invoke(
@@ -252,8 +218,8 @@ def test_scaffold_journal_preserves_index_and_refuses_existing_design(
         ["scaffold", "--journal", "--stem", "01_baseline", "--force"],
     )
     assert forced.exit_code == 0, forced.output
-    assert "## History" in index.read_text(encoding="utf-8")
-    assert design.read_text(encoding="utf-8").startswith("# 01_baseline\n")
+    assert index.read_text(encoding="utf-8") == "# Existing\n"
+    assert design.read_text(encoding="utf-8") == "# Existing design\n"
 
 
 @pytest.mark.parametrize(

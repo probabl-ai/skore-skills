@@ -22,6 +22,10 @@ metadata:
 
 # Build ML Pipeline
 
+Build in a temporary directory. The directory is deleted at the end of the
+turn. Do not treat `experiments/<stem>.py` as durable state, and do not edit
+`JOURNAL.md` or a design note.
+
 Declare a skrub DataOps graph, then attach the locked splitter
 and any non-default score. Smoke is the last step here. Do not
 fit, tune, persist, or call `skore.evaluate`.

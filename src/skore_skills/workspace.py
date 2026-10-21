@@ -41,6 +41,7 @@ STATUS_KEYS = (
     "setup",
     "loop_stage",
     "skills",
+    "workspace",
 )
 
 
@@ -323,6 +324,13 @@ def snapshot(root: Path) -> dict[str, Any]:
     )
     payload["loop_stage"] = infer_loop_stage(root, policy, payload)
     payload["skills"] = installed_skills(root)
+    temporary = (root / ".skore-temporary").is_file()
+    payload["workspace"] = "temporary" if temporary else "durable"
+    if temporary:
+        payload["setup"]["workspace"] = "done"
+        payload["setup"]["pending"] = [
+            piece for piece in payload["setup"]["pending"] if piece != "workspace"
+        ]
     return payload
 
 

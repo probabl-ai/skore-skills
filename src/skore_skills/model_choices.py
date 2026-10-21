@@ -41,7 +41,26 @@ def _table_rows(section: str, columns: int) -> list[list[str]]:
     return rows
 
 
-def _journal_facts(root: Path) -> tuple[set[str], list[dict[str, str]]]:
+def _journal_facts(root: Path) -> tuple[set[str], list[dict[str, str]], bool]:
+    from skore_skills.project_api import open_project, project_ready
+
+    if project_ready(root):
+        frame = open_project(root).experiments.frame
+        history_stems = set(
+            frame.loc[frame["status"].eq("history"), "stem"].astype(str)
+        )
+        backlog = [
+            {
+                "id": f"B{number}",
+                "item": str(row["question"]),
+                "source": str(row["stem"]),
+            }
+            for number, (_, row) in enumerate(
+                frame.loc[frame["status"].eq("backlog")].iterrows(), start=1
+            )
+        ]
+        return history_stems, backlog, False
+
     sections = _sections((root / "journal" / "JOURNAL.md").read_text(encoding="utf-8"))
 
     history_stems = {
@@ -54,7 +73,7 @@ def _journal_facts(root: Path) -> tuple[set[str], list[dict[str, str]]]:
         for row in _table_rows(sections.get("Backlog", ""), 3)
         if _BACKLOG_ID.fullmatch(row[0]) and row[1] and row[2]
     ]
-    return history_stems, backlog
+    return history_stems, backlog, True
 
 
 def model_choices(root: Path) -> dict[str, Any]:
@@ -67,17 +86,16 @@ def model_choices(root: Path) -> dict[str, Any]:
             "modeling_decisions": status["modeling_decisions"],
         }
 
-    history_stems, backlog = _journal_facts(root)
-    experiments = root / "experiments"
-    experiment_stems = (
-        {
-            path.stem
-            for path in experiments.glob("*.py")
-            if path.is_file() and path.stem != "__init__"
-        }
-        if experiments.is_dir()
-        else set()
-    )
+    history_stems, backlog, include_scripts = _journal_facts(root)
+    experiment_stems: set[str] = set()
+    if include_scripts:
+        experiments = root / "experiments"
+        if experiments.is_dir():
+            experiment_stems = {
+                path.stem
+                for path in experiments.glob("*.py")
+                if path.is_file() and path.stem != "__init__"
+            }
     model_stems = sorted(history_stems | experiment_stems)
 
     rows = _raw_rows(root)

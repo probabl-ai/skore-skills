@@ -86,6 +86,32 @@ def evaluate_consent(root: Path, stem: str) -> dict[str, Any]:
     if not cleaned:
         raise ValueError("stem is required")
 
+    from skore_skills.project_api import experiment_by_stem
+
+    experiment = experiment_by_stem(root, cleaned)
+    if experiment is not None:
+        if experiment.status == "history":
+            return {"stem": cleaned, "action": "proceed", "reason": "persisted_report"}
+        if experiment.status != "backlog":
+            return {
+                "stem": cleaned,
+                "action": "stop",
+                "reason": f"status_{experiment.status}",
+            }
+        return {
+            "stem": cleaned,
+            "action": "ask",
+            "reason": "first_eval",
+            "choices": list(_ASK_CHOICES),
+            "context": {
+                "note": experiment.id,
+                "question": experiment.question,
+                "experiment": experiment.stem,
+                "smoke": "",
+                "persisted_report": "none",
+            },
+        }
+
     smoke = root / "tests" / "smoke" / f"test_{cleaned}.py"
     if not smoke.is_file():
         return {"stem": cleaned, "action": "stop", "reason": "smoke_missing"}

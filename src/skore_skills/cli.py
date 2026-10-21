@@ -867,6 +867,134 @@ def git_review_decide_cmd(
     )
 
 
+@cli.group("experiment")
+def experiment_group() -> None:
+    """Create and update experiments in the skore project."""
+
+
+@experiment_group.command("create")
+@click.option("--stem", required=True)
+@click.option("--question", required=True)
+@click.option("--plan", default=None)
+@click.option("--source-id", default=None)
+@click.option("--check-code", default=None)
+def experiment_create(
+    stem: str,
+    question: str,
+    plan: str | None,
+    source_id: str | None,
+    check_code: str | None,
+) -> None:
+    """Create an idea, or a backlog row when ``--plan`` is set."""
+    from skore.agent import create_experiment
+
+    from skore_skills.project_api import open_project
+
+    experiment = create_experiment(
+        open_project(Path.cwd()),
+        stem=stem,
+        question=question,
+        plan=plan,
+        source_id=source_id,
+        check_code=check_code,
+    )
+    click.echo(experiment.id)
+
+
+@experiment_group.command("decide")
+@click.argument("experiment_id")
+@click.argument("status", type=click.Choice(["idea", "aside", "discarded"]))
+def experiment_decide(experiment_id: str, status: str) -> None:
+    """Move an idea among idea, aside, and discarded."""
+    from skore_skills.project_api import open_project
+
+    experiment = open_project(Path.cwd()).experiments.get(experiment_id)
+    experiment.decide(status)
+    click.echo(experiment.id)
+
+
+@experiment_group.command("promote")
+@click.argument("experiment_id")
+@click.option("--plan", required=True)
+def experiment_promote(experiment_id: str, plan: str) -> None:
+    """Move an idea to the backlog and store its plan."""
+    from skore_skills.project_api import open_project
+
+    experiment = open_project(Path.cwd()).experiments.get(experiment_id)
+    experiment.promote(plan)
+    click.echo(experiment.id)
+
+
+@experiment_group.command("list")
+@click.option("--status", default=None)
+def experiment_list(status: str | None) -> None:
+    """Print the experiments frame as JSON."""
+    from skore_skills.project_api import open_project
+
+    frame = open_project(Path.cwd()).experiments.frame
+    if status:
+        frame = frame.loc[frame["status"].astype(str) == status]
+    click.echo(frame.to_json(orient="records"))
+
+
+@cli.group("objective")
+def objective_group() -> None:
+    """Read and replace the project objective."""
+
+
+@objective_group.command("set")
+@click.argument("text")
+def objective_set(text: str) -> None:
+    """Replace the project objective."""
+    from skore_skills.project_api import open_project
+
+    project = open_project(Path.cwd())
+    project.objective = text
+    click.echo(project.objective)
+
+
+@objective_group.command("show")
+def objective_show() -> None:
+    """Print the project objective."""
+    from skore_skills.project_api import open_project
+
+    click.echo(open_project(Path.cwd()).objective)
+
+
+@cli.group("journal")
+def journal_group() -> None:
+    """Render and import the journal. Do not edit the generated files."""
+
+
+@journal_group.command("show")
+def journal_show() -> None:
+    """Print the journal rendered from the project."""
+    from skore_skills.journal_api import show_journal
+
+    click.echo(show_journal(Path.cwd()), nl=False)
+
+
+@journal_group.command("render")
+def journal_render() -> None:
+    """Write generated journal files. They are not the store."""
+    from skore_skills.journal_api import render_journal
+
+    for path in render_journal(Path.cwd()):
+        click.echo(path)
+
+
+@journal_group.command("import")
+def journal_import() -> None:
+    """Import an existing JOURNAL.md once."""
+    from skore_skills.journal_api import import_journal
+
+    try:
+        created = import_journal(Path.cwd())
+    except ValueError as exc:
+        raise click.ClickException(str(exc)) from exc
+    click.echo(created)
+
+
 def main() -> None:
     """Run the CLI (``python -m skore_skills`` / console script)."""
     cli()

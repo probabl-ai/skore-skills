@@ -136,10 +136,13 @@ def _journal(root: Path) -> None:
                 "| --- | --- | --- | --- | --- | --- |",
                 "| 01_dummy | What MAE? | done | rmse=1.2 | old | Plan. |",
                 "| short |",
+                "| 12_imported | No plan. | done |",
+                "|  |  | done |",
                 "## Backlog",
                 "| # | Item | Source |",
                 "| --- | --- | --- |",
                 "| B1 | Fit a linear model. | user |",
+                "| X1 | skip me | user |",
                 "## Ideas",
                 "| Question | Status | Experiment | Source |",
                 "| --- | --- | --- | --- |",
@@ -147,6 +150,10 @@ def _journal(root: Path) -> None:
                 "| Try a log target? | aside | 04_log | design:01_dummy |",
                 "| Ignore it. | discarded | 05_unused | audit:01_dummy:checks.SKD004 |",
                 "|  | open | 06_blank | user |",
+                "| Mystery? | open | 08_mystery | mystery |",
+                "| Orphan? | open | 09_orphan | design:missing-parent |",
+                "| only | two |",
+                "| <!-- skip --> | a | b | c |",
             ]
         ),
         encoding="utf-8",
@@ -154,6 +161,7 @@ def _journal(root: Path) -> None:
     ideas = journal / "ideas"
     ideas.mkdir()
     (ideas / "07_file.md").write_text("# From a file\n", encoding="utf-8")
+    (ideas / "10_plain.md").write_text("plain body\n", encoding="utf-8")
     (journal / "03_outliers.md").write_text("note body\n", encoding="utf-8")
 
 
@@ -163,14 +171,23 @@ def test_import_renders_and_skips_a_second_pass(tmp_path: Path, monkeypatch) -> 
     with pytest.raises(ValueError, match="JOURNAL.md is missing"):
         import_journal(tmp_path)
     _journal(tmp_path)
-    assert import_journal(tmp_path) == 6
+    assert import_journal(tmp_path) == 10
     assert import_journal(tmp_path) == 0
     history = project.frame.loc[project.frame["stem"].eq("01_dummy")].iloc[0]
     assert history["status"] == "history"
+    imported = project.frame.loc[project.frame["stem"].eq("12_imported")].iloc[0]
+    assert imported["status"] == "history"
+    assert imported["plan"] == "Imported."
     aside = project.frame.loc[project.frame["stem"].eq("04_log")].iloc[0]
     assert aside["status"] == "aside"
     assert aside["source_id"] == "id-01_dummy"
+    orphan = project.frame.loc[project.frame["stem"].eq("09_orphan")].iloc[0]
+    assert pd.isna(orphan["source_id"])
+    plain = project.frame.loc[project.frame["stem"].eq("10_plain")].iloc[0]
+    assert plain["question"] == "10_plain"
+    next(row for row in project.rows if row["stem"] == "01_dummy")["plan"] = None
     written = render_journal(tmp_path)
+    assert "None" not in (tmp_path / "journal" / "01_dummy.md").read_text()
     assert any(path.name == "JOURNAL.md" for path in written)
     assert "What MAE?" in show_journal(tmp_path)
     render_if_project_has_content(tmp_path)
@@ -242,6 +259,7 @@ def test_consents_follow_the_experiment_status(tmp_path: Path, monkeypatch) -> N
             "idea": ("idea", "id-i", False),
             "discarded": ("discarded", "id-d", False),
             "broken": ("history", "id-x", "raise"),
+            "bare": ("idea", "id-bare", False),
         }[stem]
         handle = _Handle(
             project,
@@ -250,8 +268,8 @@ def test_consents_follow_the_experiment_status(tmp_path: Path, monkeypatch) -> N
                 "stem": stem,
                 "status": row[0],
                 "question": "Q?",
-                "plan": "Plan.",
-                "source_id": "src",
+                "plan": None if stem == "bare" else "Plan.",
+                "source_id": None if stem == "bare" else "src",
             },
         )
         if row[2] == "raise":
@@ -275,6 +293,9 @@ def test_consents_follow_the_experiment_status(tmp_path: Path, monkeypatch) -> N
     assert design_consent(tmp_path, "history")["reason"] == "done"
     assert design_consent(tmp_path, "discarded")["reason"] == "abandoned"
     assert design_consent(tmp_path, "idea")["reason"] == "first_approval"
+    bare = design_consent(tmp_path, "bare")
+    assert bare["context"]["source"] == ""
+    assert bare["context"]["change"] == ""
     assert evaluate_consent(tmp_path, "history")["reason"] == "persisted_report"
     assert evaluate_consent(tmp_path, "idea")["reason"] == "status_idea"
     assert evaluate_consent(tmp_path, "backlog")["reason"] == "first_eval"
@@ -284,7 +305,9 @@ def test_consents_follow_the_experiment_status(tmp_path: Path, monkeypatch) -> N
     assert loop_artifacts(tmp_path, "history")["reason"] == "report_stored"
     assert loop_artifacts(tmp_path, "backlog")["reason"] == "ready_to_run"
     assert loop_artifacts(tmp_path, "idea")["reason"] == "status_idea"
+    assert loop_artifacts(tmp_path, "broken")["files"]["report"] is False
     assert loop_locator(tmp_path, "history")["locator"] == "id-h"
+    assert loop_locator(tmp_path, "idea")["reason"] == "missing"
 
 
 def test_open_project_and_lookup_by_stem(tmp_path: Path, monkeypatch) -> None:
@@ -316,6 +339,7 @@ def test_open_project_and_lookup_by_stem(tmp_path: Path, monkeypatch) -> None:
     marker.mkdir()
     (marker / ".SKORE_WORKSPACE").write_text("", encoding="utf-8")
     assert experiment_by_stem(tmp_path, "01_dummy") == "id-1"
+    assert experiment_by_stem(tmp_path, "missing") is None
     empty = FakeProject("ml", "local", marker)
     empty.rows = []
     monkeypatch.setattr(skore, "Project", lambda *args, **kwargs: empty)

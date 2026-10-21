@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shutil
 import sys
 import types
 from pathlib import Path
@@ -137,6 +138,7 @@ def _journal(root: Path) -> None:
                 "| 01_dummy | What MAE? | done | rmse=1.2 | old | Plan. |",
                 "| short |",
                 "| 12_imported | No plan. | done |",
+                "| 13_open | Stay an idea? | open |",
                 "|  |  | done |",
                 "## Backlog",
                 "| # | Item | Source |",
@@ -171,7 +173,7 @@ def test_import_renders_and_skips_a_second_pass(tmp_path: Path, monkeypatch) -> 
     with pytest.raises(ValueError, match="JOURNAL.md is missing"):
         import_journal(tmp_path)
     _journal(tmp_path)
-    assert import_journal(tmp_path) == 10
+    assert import_journal(tmp_path) == 11
     assert import_journal(tmp_path) == 0
     history = project.frame.loc[project.frame["stem"].eq("01_dummy")].iloc[0]
     assert history["status"] == "history"
@@ -190,10 +192,15 @@ def test_import_renders_and_skips_a_second_pass(tmp_path: Path, monkeypatch) -> 
     assert "None" not in (tmp_path / "journal" / "01_dummy.md").read_text()
     assert any(path.name == "JOURNAL.md" for path in written)
     assert "What MAE?" in show_journal(tmp_path)
+    project.objective = "Predict the target."
+    monkeypatch.setattr("skore_skills.journal_api.project_ready", lambda root: True)
     render_if_project_has_content(tmp_path)
     project.objective = ""
+    render_if_project_has_content(tmp_path)
     project.rows.clear()
     render_if_project_has_content(tmp_path)
+    shutil.rmtree(tmp_path / "journal" / "ideas")
+    assert import_journal(tmp_path) == 0
 
 
 def test_render_skips_a_project_that_is_not_ready(tmp_path: Path, monkeypatch) -> None:

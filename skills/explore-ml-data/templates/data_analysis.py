@@ -26,7 +26,9 @@ RAW
 
 # %%
 report = skrub.TableReport(RAW, title="<slug>", verbose=0)
-report.write_html(OUT / "data_analysis_<slug>.html")
+(OUT / "data_analysis_<slug>.html").write_text(
+    report.html_snippet(), encoding="utf-8"
+)
 report
 
 # %% [markdown]

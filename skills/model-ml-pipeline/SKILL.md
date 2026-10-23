@@ -235,7 +235,7 @@ duplicate a child's detailed preview.
   off until a report exists. With no shell, that four-phase
   paragraph is the whole answer: do not name the post-smoke
   Evaluate / Modify / Stop question, an unfitted `site build`,
-  or `pipeline.html`.
+  or `pipeline.svg`.
 
 Do not invent minute estimates at dispatcher level. Name a known
 duration only when explicit measured evidence is available;
@@ -284,8 +284,8 @@ also ask in chat whether the note looks right.
    (Evaluate / Modify / Stop on `ask`, with that JSON `context`
    rendered inline per § Gate context). Build also writes the
    unfitted Method viewer
-   (`scratch/results/<stem>/pipeline/` when `DataOp.skb.report`
-   accepts `eval`, otherwise `pipeline.html`) and, when
+   (`scratch/results/<stem>/pipeline.svg` and the DataOp report
+   `scratch/results/<stem>/pipeline/`) and, when
    `policy.site` is true and `export-ml-site` is installed, runs
    `site build --if-stale` after that snapshot and before Evaluate so Method
    shows that report. Missing or skipped EDA does not defer it.

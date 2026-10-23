@@ -95,9 +95,8 @@ reading the table.
    If the user wants the notebook on the site, load
    `add-python-package` for `nbconvert` (agent) and pass `--html`
    (writes a self-contained `<stem>.nb.html` next to the `.py`).
-   The site embeds that file in the associated exploratory data
-   analysis or design report
-   with open-separately and fullscreen controls.
+   The site links that file from the associated exploratory data
+   analysis or design report. It opens as a page of its own.
 
    Optional `--out path.ipynb`. Keep `*.ipynb` gitignored unless
    the user asks `setup-git` to track them.

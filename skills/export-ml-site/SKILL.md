@@ -22,24 +22,34 @@ workspace-relative path. Do not say double-click or
 not quote `site init` / `site build` as something they should run.
 
 The site is a derived index of files other skills already write.
-Markdown is the report: its figures, TableReport HTML, and existing
-converted notebooks (`<stem>.nb.html`, written only by
-`export-ml-notebook` with `notebook convert --html`) are embedded
-inline. HTML viewers have open-separately and fullscreen controls.
+The staged docs mirror the workspace folders (`journal/`,
+`data_analysis/`, `experiments/`, `audit/`, `scratch/results/`), so
+a relative link written between two source files also works on the
+site. MkDocs warns about a link it cannot resolve and `site build`
+prints that warning: fix the link, do not hide the warning.
+Markdown is the report: its figures are shown inline and an
+HTML file it refers to by name is pasted into the page when it is
+a fragment (TableReport `html_snippet()`). A whole HTML document
+(Plotly) sits in a fixed-height iframe with an open-separately
+link. Existing converted notebooks
+(`<stem>.nb.html`, written only by `export-ml-notebook` with
+`notebook convert --html`) are links that open a page of their own.
 Each experiment design note has one `## Notebooks` section:
-evaluation first, then audit. The audit viewer is
+evaluation first, then audit. The audit notebook is
 `audit/<stem>.nb.html` from `notebook convert --html`. A missing
 file is omitted. Do not use `<!-- results-embed: audit -->`.
-Derived HTML and PNG viewers under `scratch/results/<stem>/`
-(report, checks, metrics, plus extra Display slugs) may be copied
-into the staged docs. Core Results headings are Report overview /
-Checks / Metrics. `### Metrics` is a heading; the scores are the
-embedded `metrics.html` viewer, not a second markdown table.
+Derived HTML and PNG files under `scratch/results/<stem>/`
+(checks, metrics, plus extra Display slugs) may be copied into the
+staged docs. Core Results headings are Report overview / Checks /
+Metrics. `### Report overview` is prose only: the skore report
+(`report.html`) is not published. `checks.html` and `metrics.html`
+are pasted into the page under their headings; the scores are that
+table, not a second markdown table.
 Extra slugs use `<!-- results-embed: <slug> -->` under
-`## Results` **or** `## Method` (`pipeline` is the Method
-DataOp report when `pipeline/index.html` exists, otherwise
-the graph file `pipeline.html`).
-Only Markdown and already-generated notebook/HTML viewers are
+`## Results` **or** `## Method`. `pipeline` is the graph image
+`pipeline.svg` shown on the page plus a link to the DataOp report
+`pipeline/index.html`.
+Only Markdown and already-generated notebook/HTML files are
 exported. The gitignored serialized Skore `reports/` directory is
 private runtime state and is never copied into the site.
 On desktop, site pages are in the top bar (experiments in a
@@ -94,7 +104,7 @@ the table.
    user the website has been updated and paste the `file://`
    line from that output verbatim. Do not say double-click or
    "no server". Do not name the markdown file or a stage
-   page (`html/data_analysis.html`, `html/<stem>.html`). Stage
+   page (`html/data_analysis/data_analysis.html`, `html/journal/<stem>.html`). Stage
    owners that just ran `site build` say that same line in the
    User-facing close.
 

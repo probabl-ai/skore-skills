@@ -14,9 +14,10 @@ SKILL.md — never as HTML comments in `data_analysis.md` or as
 
 Last expressions are rich objects or small summary frames: the
 frame (`RAW`), `skrub.TableReport(...)`, duplicate/target/leakage
-tables, bivariate column lists, **and live figures**. `write_html`
-saves `data_analysis/data_analysis_<slug>.html` for
-`data_analysis.md` to embed. Saved figures are PNG siblings under
+tables, bivariate column lists, **and live figures**. Writing
+`report.html_snippet()` to `data_analysis/data_analysis_<slug>.html`
+is what `data_analysis.md` shows: the site pastes the fragment into
+the page. Saved figures are PNG siblings under
 `data_analysis/`, or Plotly HTML siblings (`<plot_slug>.html`, never
 `data_analysis_<slug>.html`). Do not put `json()`, dict dumps of TableReport,
 or analyses TableReport already covers (dtypes, missingness,
@@ -63,7 +64,7 @@ Copy `templates/materialize.py` to
 `scratch/data_analysis/materialize.py` (gitignored). This is the
 only run. The matplotlib Agg backend is set before seaborn; do not
 put that in the human notebook. Replace `<ANALYSIS>` with the same
-loads, `TableReport.write_html` calls, and figure or HTML saves as
+loads, `TableReport.html_snippet()` writes, and figure or HTML saves as
 the human file. One load per family. Bind `FAMILIES` as
 `(slug, raw)` and `FRAME` to the pandas frame that contains every
 target (the first family when there is no target). No

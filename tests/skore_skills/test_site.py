@@ -36,6 +36,10 @@ def test_site_title_uses_package_then_folder(tmp_path: Path) -> None:
     assert site_mod.site_title(tmp_path) == "claim_predictor"
 
 
+def _tab_link(href: str, label: str) -> str:
+    return f'<a href="{href}" target="_blank" rel="noopener">{label}</a>'
+
+
 def _ok_mkdocs(tmp_path: Path):
     class Result:
         returncode = 0
@@ -43,9 +47,9 @@ def _ok_mkdocs(tmp_path: Path):
         stderr = ""
 
     def fake_run(argv: list[str], **kwargs: object) -> Result:
-        out = tmp_path / "html"
-        out.mkdir(parents=True, exist_ok=True)
-        (out / "index.html").write_text("<html></html>\n", encoding="utf-8")
+        entry = tmp_path / "html" / site_mod.entry_page(tmp_path)
+        entry.parent.mkdir(parents=True, exist_ok=True)
+        entry.write_text("<html></html>\n", encoding="utf-8")
         return Result()
 
     return fake_run
@@ -115,8 +119,9 @@ def test_site_build_runs_mkdocs(
     assert (tmp_path / "mkdocs.yml").read_text(encoding="utf-8") == "hand-written\n"
     generated = (tmp_path / "_build" / "mkdocs.yml").read_text(encoding="utf-8")
     assert 'site_name: "claim_predictor"' in generated
-    assert "index.md" in generated
-    assert "Home: index.md" in generated
+    assert "  homepage: journal/JOURNAL.html\n" in generated
+    assert "Home: journal/JOURNAL.md" in generated
+    assert "index.md" not in generated
     assert "font: false" in generated
     assert (
         "markdown_extensions:\n  - pymdownx.arithmatex:\n      generic: true\n"
@@ -135,7 +140,8 @@ def test_site_build_runs_mkdocs(
         "  - assets/skore/katex/contrib/auto-render.min.js\n"
         "  - assets/skore/katex-render.js\n"
     ) in generated
-    assert (tmp_path / "_build" / "docs" / "index.md").is_file()
+    assert (tmp_path / "_build" / "docs" / "journal" / "JOURNAL.md").is_file()
+    assert not (tmp_path / "_build" / "docs" / "index.md").exists()
     assets = tmp_path / "_build" / "docs" / "assets" / "skore"
     assert (assets / "skore.css").is_file()
     assert (assets / "skore.js").is_file()
@@ -154,18 +160,19 @@ def test_site_build_runs_mkdocs(
     assert (icons / "square-caret-left-regular.svg").is_file()
     assert (icons / "square-caret-right-regular.svg").is_file()
     assert (icons / "FONT-AWESOME-NOTICE.txt").is_file()
-    journal = (tmp_path / "_build" / "docs" / "index.md").read_text(encoding="utf-8")
-    assert "](data_analysis.md)" in journal
-    analysis = (tmp_path / "_build" / "docs" / "data_analysis.md").read_text(
+    journal = (tmp_path / "_build" / "docs" / "journal" / "JOURNAL.md").read_text(
         encoding="utf-8"
     )
+    assert "](../data_analysis/data_analysis.md)" in journal
+    analysis = (
+        tmp_path / "_build" / "docs" / "data_analysis" / "data_analysis.md"
+    ).read_text(encoding="utf-8")
     assert "$R^2$" in analysis
     assert "$$\\frac{1}{2}$$" in analysis
-    index = tmp_path / "html" / "index.html"
-    assert index.is_file()
+    assert (tmp_path / "html" / "journal" / "JOURNAL.html").is_file()
     launcher = tmp_path / "report.html"
     assert launcher.is_file()
-    assert "url=html/index.html" in launcher.read_text(encoding="utf-8")
+    assert "url=html/journal/JOURNAL.html" in launcher.read_text(encoding="utf-8")
     assert site_mod.launcher_url(tmp_path) in result.output
     assert site_mod.launcher_url(tmp_path).startswith("file://")
     assert "report.html" in (tmp_path / ".gitignore").read_text(encoding="utf-8")
@@ -257,7 +264,9 @@ def test_site_build_omits_data_understanding_without_eda(
     monkeypatch.chdir(tmp_path)
     result = CliRunner().invoke(cli, ["site", "build"])
     assert result.exit_code == 0, result.output
-    staged = (tmp_path / "_build" / "docs" / "index.md").read_text(encoding="utf-8")
+    staged = (tmp_path / "_build" / "docs" / "journal" / "JOURNAL.md").read_text(
+        encoding="utf-8"
+    )
     assert "## Data understanding" not in staged
     assert "data_analysis.md" not in staged
     assert "## History" in staged
@@ -283,21 +292,24 @@ def test_site_build_groups_experiments_and_writes_top_nav(
     generated = (tmp_path / "_build" / "mkdocs.yml").read_text(encoding="utf-8")
     assert (
         "  - Experiments:\n"
-        "      - 01_baseline: 01_baseline.md\n"
-        "      - 02_tuning: 02_tuning.md\n"
+        "      - 01_baseline: journal/01_baseline.md\n"
+        "      - 02_tuning: journal/02_tuning.md\n"
     ) in generated
     script = (
         tmp_path / "_build" / "docs" / "assets" / "skore" / "nav-data.js"
     ).read_text(encoding="utf-8")
     payload = script.removeprefix("window.__SKORE_NAV__ = ").removesuffix(";\n")
     assert json.loads(payload) == [
-        {"label": "Home", "href": "index.html"},
-        {"label": "Exploratory data analysis", "href": "data_analysis.html"},
+        {"label": "Home", "href": "journal/JOURNAL.html"},
+        {
+            "label": "Exploratory data analysis",
+            "href": "data_analysis/data_analysis.html",
+        },
         {
             "label": "Experiments",
             "children": [
-                {"label": "01_baseline", "href": "01_baseline.html"},
-                {"label": "02_tuning", "href": "02_tuning.html"},
+                {"label": "01_baseline", "href": "journal/01_baseline.html"},
+                {"label": "02_tuning", "href": "journal/02_tuning.html"},
             ],
         },
     ]
@@ -322,6 +334,20 @@ def test_site_theme_has_trainhard_layout_contract() -> None:
     assert "square-caret-left-regular.svg" in javascript
     assert "square-caret-right-regular.svg" in javascript
     assert 'event.key !== "Escape"' in javascript
+    assert 'script[src$="assets/skore/skore.js"]' in javascript
+    assert "const siteUrl = (path) => new URL(path, siteRoot).href;" in javascript
+    assert "link.href = siteUrl(item.href)" in javascript
+    assert 'siteUrl("assets/skore/icons/square-caret-right-regular.svg")' in javascript
+
+
+def test_site_assets_do_not_script_the_embedded_frames() -> None:
+    """Frames are sized by CSS alone: no height messages, no fullscreen."""
+    css = (site_mod.SITE_ASSETS / "skore.css").read_text(encoding="utf-8")
+    javascript = (site_mod.SITE_ASSETS / "skore.js").read_text(encoding="utf-8")
+    assert "height: min(72vh, 52rem)" in css
+    assert ".skore-inline table.dataframe" in css
+    for name in ("message", "postMessage", "fullscreen", "iframe"):
+        assert name not in javascript
 
 
 def test_site_theme_uses_hub_sizing_scale() -> None:
@@ -457,54 +483,26 @@ def test_site_build_copies_data_analysis_html(
     monkeypatch.chdir(tmp_path)
     result = CliRunner().invoke(cli, ["site", "build"])
     assert result.exit_code == 0, result.output
-    staged = (tmp_path / "_build" / "docs" / "data_analysis_adult.html").read_text(
-        encoding="utf-8"
-    )
-    assert "skore-embed-height" in staged
-    assert staged.index("skore-embed-height") < staged.index("</body>")
+    staged = (
+        tmp_path / "_build" / "docs" / "data_analysis" / "data_analysis_adult.html"
+    ).read_text(encoding="utf-8")
+    assert staged == "<html><body>report</body></html>\n"
 
 
-def test_with_height_reporter_without_body() -> None:
-    """A report fragment with no ``</body>`` still gets the reporter."""
-    reported = site_mod.with_height_reporter("<table>rows</table>\n")
-    assert reported.startswith("<table>rows</table>\n")
-    assert "skore-embed-height" in reported
-
-
-def test_as_embed_document_hosts_a_bare_fragment_in_a_shadow_root() -> None:
-    """A pandas table carries no styles, so give it a root and the baseline."""
+def test_as_embed_document_wraps_a_bare_fragment() -> None:
+    """A pandas table carries no styles, so give it a charset and the baseline."""
     staged = site_mod.as_embed_document(
         '<table class="dataframe"><tr><th>R²</th></tr></table>'
     )
     assert staged.startswith("<!DOCTYPE html>")
     assert '<meta charset="utf-8">' in staged
     assert 'href="assets/skore/embed.css"' in staged
-    assert 'attachShadow({ mode: "open" })' in staged
-    assert staged.index(f'<template id="{site_mod.EMBED_TEMPLATE_ID}">') < staged.index(
-        '<table class="dataframe">'
-    )
-    assert "skore-embed-height" in staged
+    assert '<table class="dataframe">' in staged
+    assert "<script" not in staged
+    assert "<template" not in staged
 
 
-def test_as_embed_document_leaves_a_skore_report_in_the_light_dom() -> None:
-    """skore hosts its own root; nesting it in a second one blanks the card."""
-    fragment = (
-        '<div id="skore-report-1-wrapper">\n'
-        '<template id="skore-report-1-template"><style>.container {}</style>'
-        "</template>\n"
-        '<div id="skore-report-1"></div>\n'
-        "</div>\n"
-        '<script>skoreInitEstimatorReport("skore-report-1");</script>\n'
-    )
-    staged = site_mod.as_embed_document(fragment)
-    assert staged.startswith("<!DOCTYPE html>")
-    assert 'href="assets/skore/embed.css"' in staged
-    assert fragment in staged
-    assert site_mod.EMBED_HOST_ID not in staged
-    assert "attachShadow" not in staged
-
-
-def test_as_embed_document_keeps_a_scripted_fragment_reachable() -> None:
+def test_as_embed_document_keeps_a_scripted_fragment_verbatim() -> None:
     """``estimator_html_repr`` resolves its container through ``document``."""
     fragment = (
         "<style>.sk-global {}</style><body>"
@@ -513,46 +511,47 @@ def test_as_embed_document_keeps_a_scripted_fragment_reachable() -> None:
     )
     staged = site_mod.as_embed_document(fragment)
     assert staged.count("<!DOCTYPE html>") == 1
-    assert "<template" not in staged
+    assert fragment in staged
     assert "attachShadow" not in staged
-    assert staged.index("forceTheme('sk-container-id-1');") < staged.index(
-        "skore-embed-height"
-    )
 
 
 def test_as_embed_document_leaves_a_whole_document_alone() -> None:
-    """skrub ``write_html`` output already is a document; only size it."""
+    """skrub ``write_html`` output already is a document."""
     document = "<!doctype html>\n<html><body>report</body></html>\n"
-    staged = site_mod.as_embed_document(document)
-    assert "<!DOCTYPE html>" not in staged
-    assert "assets/skore/embed.css" not in staged
-    assert staged.index("skore-embed-height") < staged.index("</body>")
+    assert site_mod.as_embed_document(document) == document
 
 
-def test_site_build_wraps_fragment_results_in_a_document(
+def test_site_build_inlines_checks_and_metrics_fragments(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Staged ``_repr_html_`` fragments are served as UTF-8 documents."""
+    """Checks and metrics are pasted into the page, not staged as files."""
     _scaffold(tmp_path)
     (tmp_path / "journal" / "01_x.md").write_text(
-        "# design\n\n## Results\n\n### Metrics\n\nMAE 3421.\n\n## Notebooks\n",
+        "# design\n\n## Results\n\n### Checks\n\nOne issue.\n\n"
+        "### Metrics\n\nMAE 3421.\n\n## Notebooks\n",
         encoding="utf-8",
     )
     results = tmp_path / "scratch" / "results" / "01_x"
     results.mkdir(parents=True)
+    (results / "checks.html").write_text(
+        '<div id="checks-1">\n\n<p>R² check</p>\n</div>\n', encoding="utf-8"
+    )
     (results / "metrics.html").write_text(
-        '<table class="dataframe"><tr><th>R²</th></tr></table>', encoding="utf-8"
+        '<table class="dataframe"><tr><th>R²</th></tr></table>\n', encoding="utf-8"
     )
     monkeypatch.setattr(site_mod.subprocess, "run", _ok_mkdocs(tmp_path))
     monkeypatch.chdir(tmp_path)
     result = CliRunner().invoke(cli, ["site", "build"])
     assert result.exit_code == 0, result.output
     docs = tmp_path / "_build" / "docs"
-    staged = (docs / "01_x.metrics.html").read_text(encoding="utf-8")
-    assert staged.startswith("<!DOCTYPE html>")
-    assert '<meta charset="utf-8">' in staged
-    assert "R²" in staged
-    assert (docs / "assets" / "skore" / "embed.css").is_file()
+    staged = (docs / "journal" / "01_x.md").read_text(encoding="utf-8")
+    assert '<div id="checks-1">\n\n<p>R² check</p>\n</div>' in staged
+    assert '<table class="dataframe"><tr><th>R²</th></tr></table>' in staged
+    assert staged.index("One issue.") < staged.index('<div id="checks-1">')
+    assert staged.index("MAE 3421.") < staged.index("<table")
+    assert "<iframe" not in staged
+    assert not (docs / "scratch" / "results" / "01_x" / "checks.html").exists()
+    assert not (docs / "scratch" / "results" / "01_x" / "metrics.html").exists()
 
 
 def test_site_build_wraps_fragment_data_analysis_html(
@@ -571,18 +570,18 @@ def test_site_build_wraps_fragment_data_analysis_html(
     monkeypatch.chdir(tmp_path)
     result = CliRunner().invoke(cli, ["site", "build"])
     assert result.exit_code == 0, result.output
-    staged = (tmp_path / "_build" / "docs" / "target_distribution.html").read_text(
-        encoding="utf-8"
-    )
+    staged = (
+        tmp_path / "_build" / "docs" / "data_analysis" / "target_distribution.html"
+    ).read_text(encoding="utf-8")
     assert staged.startswith("<!DOCTYPE html>")
     assert '<meta charset="utf-8">' in staged
-    assert "skore-embed-height" in staged
+    assert 'href="../assets/skore/embed.css"' in staged
 
 
-def test_site_build_autosizes_report_but_not_notebook(
+def test_site_build_links_notebook_and_sizes_report_with_css(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Report viewers fit their content; notebook viewers keep the fixed height."""
+    """HTML reports sit in plain iframes; the notebook is a link."""
     _scaffold(tmp_path)
     (tmp_path / "data_analysis").mkdir()
     (tmp_path / "data_analysis" / "data_analysis.md").write_text(
@@ -600,17 +599,17 @@ def test_site_build_autosizes_report_but_not_notebook(
     result = CliRunner().invoke(cli, ["site", "build"])
     assert result.exit_code == 0, result.output
     docs = tmp_path / "_build" / "docs"
-    staged = (docs / "data_analysis.md").read_text(encoding="utf-8")
+    staged = (docs / "data_analysis" / "data_analysis.md").read_text(encoding="utf-8")
     assert (
         '<iframe src="data_analysis_adult.html" title="Interactive report" '
-        'loading="lazy" data-skore-autosize>' in staged
+        'loading="lazy"></iframe>' in staged
     )
-    notebook_tag = staged[staged.index('<iframe src="data_analysis.nb.html"') :]
-    notebook_tag = notebook_tag[: notebook_tag.index(">") + 1]
-    assert "data-skore-autosize" not in notebook_tag
-    assert (docs / "data_analysis.nb.html").read_text(encoding="utf-8") == (
-        "<html><body>notebook</body></html>\n"
-    )
+    assert _tab_link("data_analysis.nb.html", "Open the notebook") in staged
+    assert '<iframe src="data_analysis.nb.html"' not in staged
+    assert "data-skore" not in staged
+    assert (docs / "data_analysis" / "data_analysis.nb.html").read_text(
+        encoding="utf-8"
+    ) == ("<html><body>notebook</body></html>\n")
 
 
 def test_site_build_missing_index(
@@ -659,18 +658,20 @@ def test_site_build_does_not_convert(
     result = CliRunner().invoke(cli, ["site", "build"])
     assert result.exit_code == 0, result.output
     assert called == []
-    staged = (tmp_path / "_build" / "docs" / "data_analysis.md").read_text(
-        encoding="utf-8"
-    )
+    staged = (
+        tmp_path / "_build" / "docs" / "data_analysis" / "data_analysis.md"
+    ).read_text(encoding="utf-8")
     assert "## Notebook" not in staged
     assert not (tmp_path / "_build" / "docs" / "data_analysis.py").exists()
-    assert not (tmp_path / "_build" / "docs" / "data_analysis.nb.html").exists()
+    assert not (
+        tmp_path / "_build" / "docs" / "data_analysis" / "data_analysis.nb.html"
+    ).exists()
 
 
 def test_site_build_embeds_notebook_in_report(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """data_analysis.nb.html becomes a viewer in data_analysis.md, not a nav page."""
+    """data_analysis.nb.html is linked from data_analysis.md, not a nav page."""
     _scaffold(tmp_path)
     (tmp_path / "data_analysis").mkdir()
     (tmp_path / "data_analysis" / "data_analysis.md").write_text(
@@ -684,14 +685,13 @@ def test_site_build_embeds_notebook_in_report(
     result = CliRunner().invoke(cli, ["site", "build"])
     assert result.exit_code == 0, result.output
     docs = tmp_path / "_build" / "docs"
-    assert (docs / "data_analysis.nb.html").read_text(encoding="utf-8") == (
-        "<html>notebook</html>\n"
-    )
-    staged = (docs / "data_analysis.md").read_text(encoding="utf-8")
+    assert (docs / "data_analysis" / "data_analysis.nb.html").read_text(
+        encoding="utf-8"
+    ) == ("<html>notebook</html>\n")
+    staged = (docs / "data_analysis" / "data_analysis.md").read_text(encoding="utf-8")
     assert "## Notebook" in staged
-    assert '<iframe src="data_analysis.nb.html"' in staged
-    assert "data-skore-fullscreen" in staged
-    assert "Open separately" in staged
+    assert _tab_link("data_analysis.nb.html", "Open the notebook") in staged
+    assert "<iframe" not in staged
     nav = (tmp_path / "_build" / "mkdocs.yml").read_text(encoding="utf-8")
     assert "Exploratory data analysis notebook" not in nav
 
@@ -699,7 +699,7 @@ def test_site_build_embeds_notebook_in_report(
 def test_site_build_pairs_experiment_notebook(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """journal/NN.md embeds experiments/NN.nb.html when it exists."""
+    """journal/NN.md links experiments/NN.nb.html when it exists."""
     _scaffold(tmp_path)
     (tmp_path / "journal" / "01_x.md").write_text("# design\n", encoding="utf-8")
     (tmp_path / "experiments").mkdir()
@@ -711,14 +711,14 @@ def test_site_build_pairs_experiment_notebook(
     result = CliRunner().invoke(cli, ["site", "build"])
     assert result.exit_code == 0, result.output
     docs = tmp_path / "_build" / "docs"
-    assert (docs / "01_x.nb.html").is_file()
-    assert '<iframe src="01_x.nb.html"' in (docs / "01_x.md").read_text(
-        encoding="utf-8"
-    )
-    staged = (docs / "01_x.md").read_text(encoding="utf-8")
+    assert (docs / "experiments" / "01_x.nb.html").is_file()
+    staged = (docs / "journal" / "01_x.md").read_text(encoding="utf-8")
     assert staged.count("## Notebooks") == 1
-    assert "### Evaluation notebook" in staged
-    assert "### Audit notebook" not in staged
+    assert (
+        "- " + _tab_link("../experiments/01_x.nb.html", "Evaluation notebook")
+    ) in staged
+    assert "Audit notebook" not in staged
+    assert "<iframe" not in staged
     nav = (tmp_path / "_build" / "mkdocs.yml").read_text(encoding="utf-8")
     assert "01_x notebook" not in nav
 
@@ -742,15 +742,15 @@ def test_site_build_appends_audit_after_experiment_notebook(
     result = CliRunner().invoke(cli, ["site", "build"])
     assert result.exit_code == 0, result.output
     docs = tmp_path / "_build" / "docs"
-    assert (docs / "01_x.audit.nb.html").read_text(encoding="utf-8") == (
+    assert (docs / "audit" / "01_x.nb.html").read_text(encoding="utf-8") == (
         "<html>audit</html>\n"
     )
-    staged = (docs / "01_x.md").read_text(encoding="utf-8")
-    assert staged.index('<iframe src="01_x.nb.html"') < staged.index(
-        '<iframe src="01_x.audit.nb.html"'
-    )
+    staged = (docs / "journal" / "01_x.md").read_text(encoding="utf-8")
     assert staged.count("## Notebooks") == 1
-    assert staged.index("### Evaluation notebook") < staged.index("### Audit notebook")
+    assert staged.index('href="../experiments/01_x.nb.html"') < staged.index(
+        'href="../audit/01_x.nb.html"'
+    )
+    assert staged.index("Evaluation notebook") < staged.index("Audit notebook")
     nav = (tmp_path / "_build" / "mkdocs.yml").read_text(encoding="utf-8")
     assert "01_x audit" not in nav
 
@@ -770,15 +770,15 @@ def test_site_build_without_audit_has_no_audit_section(
     result = CliRunner().invoke(cli, ["site", "build"])
     assert result.exit_code == 0, result.output
     docs = tmp_path / "_build" / "docs"
-    assert not (docs / "01_x.audit.nb.html").exists()
-    staged = (docs / "01_x.md").read_text(encoding="utf-8")
-    assert "### Audit notebook" not in staged
+    assert not (docs / "audit" / "01_x.nb.html").exists()
+    staged = (docs / "journal" / "01_x.md").read_text(encoding="utf-8")
+    assert "Audit notebook" not in staged
 
 
 def test_site_build_audit_without_experiment_notebook(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """An audit notebook is embedded even when the experiment has none."""
+    """An audit notebook is linked even when the experiment has none."""
     _scaffold(tmp_path)
     (tmp_path / "journal" / "01_x.md").write_text("# design\n", encoding="utf-8")
     (tmp_path / "audit").mkdir()
@@ -790,25 +790,22 @@ def test_site_build_audit_without_experiment_notebook(
     result = CliRunner().invoke(cli, ["site", "build"])
     assert result.exit_code == 0, result.output
     docs = tmp_path / "_build" / "docs"
-    staged = (docs / "01_x.md").read_text(encoding="utf-8")
-    assert '<iframe src="01_x.audit.nb.html"' in staged
+    staged = (docs / "journal" / "01_x.md").read_text(encoding="utf-8")
+    assert "- " + _tab_link("../audit/01_x.nb.html", "Audit notebook") in staged
     assert staged.count("## Notebooks") == 1
-    assert "### Evaluation notebook" not in staged
-    assert "### Audit notebook" in staged
+    assert "Evaluation notebook" not in staged
 
 
 def test_inject_notebooks_reuses_authored_section_and_is_idempotent(
     tmp_path: Path,
 ) -> None:
-    """Authored notebook placeholders become one generated viewer section."""
-    experiment = tmp_path / "01_x.nb.html"
-    audit = tmp_path / "01_x.audit.nb.html"
-    experiment.write_text("<html>run</html>\n", encoding="utf-8")
-    audit.write_text("<html>audit</html>\n", encoding="utf-8")
+    """Authored notebook placeholders become one generated link section."""
+    experiment = tmp_path / "experiments" / "01_x.nb.html"
+    audit = tmp_path / "audit" / "01_x.nb.html"
     page = site_mod.Page(
         "01_x",
         tmp_path / "01_x.md",
-        "01_x.md",
+        "journal/01_x.md",
         experiment,
         "Experiments",
         audit,
@@ -817,30 +814,32 @@ def test_inject_notebooks_reuses_authored_section_and_is_idempotent(
         "# design\n\n## Notebooks\n\n### Evaluation notebook\n\n### Audit notebook\n"
     )
 
-    once = site_mod.inject_notebook(source, page)
-    twice = site_mod.inject_notebook(once, page)
+    once = site_mod.inject_notebook(source, page, tmp_path)
+    twice = site_mod.inject_notebook(once, page, tmp_path)
 
     assert twice == once
     assert once.count("## Notebooks") == 1
-    assert once.count("### Evaluation notebook") == 1
-    assert once.count("### Audit notebook") == 1
-    assert once.index("### Evaluation notebook") < once.index("### Audit notebook")
+    assert (
+        once.count(_tab_link("../experiments/01_x.nb.html", "Evaluation notebook")) == 1
+    )
+    assert once.count(_tab_link("../audit/01_x.nb.html", "Audit notebook")) == 1
+    assert once.index("Evaluation notebook") < once.index("Audit notebook")
 
 
-def test_inject_results_appends_embeds_after_prose_and_is_idempotent(
+def test_inject_results_appends_fragments_after_prose_and_is_idempotent(
     tmp_path: Path,
 ) -> None:
-    """Authored Results prose is kept; viewers are inserted once."""
+    """Authored Results prose is kept; fragments are inserted once."""
     stem = "01_x"
     results = tmp_path / "scratch" / "results" / stem
     results.mkdir(parents=True)
     (results / "report.html").write_text("<html>report</html>\n", encoding="utf-8")
-    (results / "checks.html").write_text("<html>checks</html>\n", encoding="utf-8")
-    (results / "metrics.html").write_text("<html>metrics</html>\n", encoding="utf-8")
+    (results / "checks.html").write_text("<div>checks</div>\n", encoding="utf-8")
+    (results / "metrics.html").write_text("<div>metrics</div>\n", encoding="utf-8")
     page = site_mod.Page(
         stem,
         tmp_path / f"{stem}.md",
-        f"{stem}.md",
+        f"journal/{stem}.md",
         None,
         "Experiments",
         None,
@@ -858,14 +857,12 @@ def test_inject_results_appends_embeds_after_prose_and_is_idempotent(
 
     assert twice == once
     assert "The CV report for Ridge." in once
-    assert "One issue (SKD003)." in once
-    assert "MAE 3421." in once
-    assert once.index("The CV report for Ridge.") < once.index(
-        '<iframe src="01_x.report.html"'
-    )
-    assert once.index("### Checks") < once.index("### Metrics")
-    assert once.count('<iframe src="01_x.report.html"') == 1
-    assert "data-skore-autosize" in once
+    assert "report.html" not in once
+    assert once.index("One issue (SKD003).") < once.index("<div>checks</div>")
+    assert once.index("<div>checks</div>") < once.index("### Metrics")
+    assert once.index("MAE 3421.") < once.index("<div>metrics</div>")
+    assert once.count("<div>checks</div>") == 1
+    assert "<iframe" not in once
 
 
 def test_inject_results_skips_missing_section_and_missing_html(
@@ -875,7 +872,7 @@ def test_inject_results_skips_missing_section_and_missing_html(
     page = site_mod.Page(
         "01_x",
         tmp_path / "01_x.md",
-        "01_x.md",
+        "journal/01_x.md",
         None,
         "Experiments",
         None,
@@ -884,31 +881,31 @@ def test_inject_results_skips_missing_section_and_missing_html(
     assert site_mod.inject_results(no_section, page, tmp_path) == no_section
 
     (tmp_path / "scratch" / "results" / "01_x").mkdir(parents=True)
-    (tmp_path / "scratch" / "results" / "01_x" / "report.html").write_text(
-        "<html>report</html>\n", encoding="utf-8"
+    (tmp_path / "scratch" / "results" / "01_x" / "metrics.html").write_text(
+        "<div>metrics</div>\n", encoding="utf-8"
     )
     source = (
         "# design\n\n## Results\n\n"
-        "### Report overview\n\nThe CV report.\n\n"
         "### Checks\n\nOne issue.\n\n"
+        "### Metrics\n\nMAE 3421.\n\n"
         "## Notebooks\n"
     )
     injected = site_mod.inject_results(source, page, tmp_path)
-    assert '<iframe src="01_x.report.html"' in injected
-    assert '<iframe src="01_x.checks.html"' not in injected
+    assert "<div>metrics</div>" in injected
+    assert injected.count("<div>") == 1
     assert "One issue." in injected
 
 
-def test_inject_results_embeds_pipeline_under_method(tmp_path: Path) -> None:
-    """Method ``results-embed: pipeline`` gets the construct-time snapshot."""
+def test_inject_results_shows_pipeline_graph_under_method(tmp_path: Path) -> None:
+    """Method ``results-embed: pipeline`` shows the graph image, no report link."""
     stem = "01_x"
     results = tmp_path / "scratch" / "results" / stem
     results.mkdir(parents=True)
-    (results / "pipeline.html").write_text("<html>pipeline</html>\n", encoding="utf-8")
+    (results / "pipeline.svg").write_bytes(b"<svg/>")
     page = site_mod.Page(
         stem,
         tmp_path / f"{stem}.md",
-        f"{stem}.md",
+        f"journal/{stem}.md",
         None,
         "Experiments",
         None,
@@ -923,16 +920,17 @@ def test_inject_results_embeds_pipeline_under_method(tmp_path: Path) -> None:
     twice = site_mod.inject_results(once, page, tmp_path)
     assert twice == once
     assert "Ridge on the skrub graph." in once
-    assert once.index("Ridge on the skrub graph.") < once.index(
-        '<iframe src="01_x.pipeline.html"'
-    )
-    assert once.count('<iframe src="01_x.pipeline.html"') == 1
-    assert "data-skore-autosize" in once
+    assert once.index("Ridge on the skrub graph.") < once.index("pipeline.svg")
+    assert once.count("![01_x pipeline](../scratch/results/01_x/pipeline.svg)") == 1
+    assert "Open the full" not in once
+    assert "<iframe" not in once
     assert "## Risks" in once
 
 
-def test_inject_results_prefers_pipeline_report_directory(tmp_path: Path) -> None:
-    """A DataOp report hugs the graph, and node pages fill the viewer."""
+def test_inject_results_shows_pipeline_graph_and_links_report_directory(
+    tmp_path: Path,
+) -> None:
+    """The graph is an image; the DataOp report is a link to its own pages."""
     stem = "01_x"
     results = tmp_path / "scratch" / "results" / stem
     report = results / "pipeline"
@@ -947,11 +945,11 @@ def test_inject_results_prefers_pipeline_report_directory(tmp_path: Path) -> Non
     )
     (report / "assets").mkdir()
     (report / "assets" / "mark.svg").write_bytes(b"<svg/>")
-    (results / "pipeline.html").write_text("<html>pipeline</html>\n", encoding="utf-8")
+    (results / "pipeline.svg").write_bytes(b"<svg/>")
     page = site_mod.Page(
         stem,
         tmp_path / f"{stem}.md",
-        f"{stem}.md",
+        f"journal/{stem}.md",
         None,
         "Experiments",
         None,
@@ -965,34 +963,39 @@ def test_inject_results_prefers_pipeline_report_directory(tmp_path: Path) -> Non
     once = site_mod.inject_results(source, page, tmp_path)
     twice = site_mod.inject_results(once, page, tmp_path)
     assert twice == once
-    assert '<iframe src="01_x.pipeline/index.html"' in once
-    assert '<iframe src="01_x.pipeline.html"' not in once
-    assert "data-skore-autosize" in once
+    assert "![01_x pipeline](../scratch/results/01_x/pipeline.svg)" in once
+    assert "[![" not in once
+    assert (
+        '<a href="../scratch/results/01_x/pipeline/index.html" target="_blank" '
+        'rel="noopener">Open the full pipeline report</a>'
+    ) in once
+    assert once.index("pipeline.svg") < once.index("pipeline/index.html")
+    assert "<iframe" not in once
     docs = tmp_path / "docs"
     docs.mkdir()
     site_mod._copy_result_html(tmp_path, docs, page)
-    index = (docs / "01_x.pipeline" / "index.html").read_text(encoding="utf-8")
-    node = (docs / "01_x.pipeline" / "node_0.html").read_text(encoding="utf-8")
+    staged = docs / "scratch" / "results" / "01_x"
+    index = (staged / "pipeline" / "index.html").read_text(encoding="utf-8")
+    node = (staged / "pipeline" / "node_0.html").read_text(encoding="utf-8")
     assert 'href="node_0.html"' in index
     assert 'href="index.html"' in node
-    assert "skore-embed-height" in index
-    assert ".data_op-node" in index
-    assert "fill: true" in node
-    assert (docs / "01_x.pipeline" / "assets" / "mark.svg").read_bytes() == b"<svg/>"
+    assert "<script" not in index
+    assert (staged / "pipeline" / "assets" / "mark.svg").read_bytes() == b"<svg/>"
+    assert (staged / "pipeline.svg").read_bytes() == b"<svg/>"
 
 
 def test_inject_results_skips_method_without_pipeline_marker(
     tmp_path: Path,
 ) -> None:
-    """A pipeline.html file is not injected into Method without the marker."""
+    """A pipeline.svg file is not injected into Method without the marker."""
     stem = "01_x"
     results = tmp_path / "scratch" / "results" / stem
     results.mkdir(parents=True)
-    (results / "pipeline.html").write_text("<html>pipeline</html>\n", encoding="utf-8")
+    (results / "pipeline.svg").write_bytes(b"<svg/>")
     page = site_mod.Page(
         stem,
         tmp_path / f"{stem}.md",
-        f"{stem}.md",
+        f"journal/{stem}.md",
         None,
         "Experiments",
         None,
@@ -1012,7 +1015,7 @@ def test_inject_results_embeds_extra_slug_from_comment(
     page = site_mod.Page(
         stem,
         tmp_path / f"{stem}.md",
-        f"{stem}.md",
+        f"journal/{stem}.md",
         None,
         "Experiments",
         None,
@@ -1028,9 +1031,10 @@ def test_inject_results_embeds_extra_slug_from_comment(
     twice = site_mod.inject_results(once, page, tmp_path)
     assert twice == once
     assert "Fold 3 is weak." in once
-    assert once.index("Fold 3 is weak.") < once.index('<iframe src="01_x.roc.html"')
-    assert once.count('<iframe src="01_x.roc.html"') == 1
-    assert "data-skore-autosize" in once
+    frame = '<iframe src="../scratch/results/01_x/roc.html"'
+    assert once.index("Fold 3 is weak.") < once.index(frame)
+    assert once.count(frame) == 1
+    assert "data-skore" not in once
 
 
 def test_inject_results_embeds_extra_slug_png(
@@ -1044,7 +1048,7 @@ def test_inject_results_embeds_extra_slug_png(
     page = site_mod.Page(
         stem,
         tmp_path / f"{stem}.md",
-        f"{stem}.md",
+        f"journal/{stem}.md",
         None,
         "Experiments",
         None,
@@ -1056,10 +1060,11 @@ def test_inject_results_embeds_extra_slug_png(
         "## Notebooks\n"
     )
     injected = site_mod.inject_results(source, page, tmp_path)
-    assert "![01_x prediction_error](01_x.prediction_error.png)" in injected
-    assert injected.index("Residuals fan out.") < injected.index(
-        "01_x.prediction_error.png"
-    )
+    assert (
+        "![01_x prediction_error](../scratch/results/01_x/prediction_error.png)"
+    ) in injected
+    assert "[![" not in injected
+    assert injected.index("Residuals fan out.") < injected.index("prediction_error.png")
 
 
 def test_inject_results_copies_unmarked_slug_without_injecting(
@@ -1068,30 +1073,28 @@ def test_inject_results_copies_unmarked_slug_without_injecting(
     """Scratch HTML without a results-embed comment is not injected."""
     _scaffold(tmp_path)
     (tmp_path / "journal" / "01_x.md").write_text(
-        "# design\n\n## Results\n\n"
-        "### Report overview\n\nRidge CV report.\n\n"
-        "## Notebooks\n",
+        "# design\n\n## Results\n\n### Checks\n\nNo issues.\n\n## Notebooks\n",
         encoding="utf-8",
     )
     results = tmp_path / "scratch" / "results" / "01_x"
     results.mkdir(parents=True)
-    (results / "report.html").write_text("<html>report</html>\n", encoding="utf-8")
+    (results / "checks.html").write_text("<div>checks</div>\n", encoding="utf-8")
     (results / "roc.html").write_text("<html>roc</html>\n", encoding="utf-8")
     monkeypatch.setattr(site_mod.subprocess, "run", _ok_mkdocs(tmp_path))
     monkeypatch.chdir(tmp_path)
     result = CliRunner().invoke(cli, ["site", "build"])
     assert result.exit_code == 0, result.output
     docs = tmp_path / "_build" / "docs"
-    staged = (docs / "01_x.md").read_text(encoding="utf-8")
-    assert '<iframe src="01_x.report.html"' in staged
+    staged = (docs / "journal" / "01_x.md").read_text(encoding="utf-8")
+    assert "<div>checks</div>" in staged
     assert '<iframe src="01_x.roc.html"' not in staged
-    assert (docs / "01_x.roc.html").is_file()
+    assert (docs / "scratch" / "results" / "01_x" / "roc.html").is_file()
 
 
-def test_site_build_embeds_eval_only_results(
+def test_site_build_does_not_publish_the_skore_report(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Evaluation snapshots embed under Report overview only."""
+    """The report widget is redundant with checks and metrics: no page, no file."""
     _scaffold(tmp_path)
     (tmp_path / "journal" / "01_x.md").write_text(
         "# design\n\n## Results\n\n"
@@ -1107,20 +1110,18 @@ def test_site_build_embeds_eval_only_results(
     result = CliRunner().invoke(cli, ["site", "build"])
     assert result.exit_code == 0, result.output
     docs = tmp_path / "_build" / "docs"
-    staged = (docs / "01_x.md").read_text(encoding="utf-8")
+    staged = (docs / "journal" / "01_x.md").read_text(encoding="utf-8")
     assert "Ridge CV report." in staged
-    assert '<iframe src="01_x.report.html"' in staged
+    assert "<iframe" not in staged
     assert "### Checks" not in staged
     assert "### Metrics" not in staged
-    copied = (docs / "01_x.report.html").read_text(encoding="utf-8")
-    assert "<html>report</html>" in copied
-    assert "skore-embed-height" in copied
+    assert not (docs / "scratch" / "results" / "01_x" / "report.html").exists()
 
 
 def test_site_build_embeds_audit_results_in_order(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """Checks then metrics follow the report overview embed."""
+    """Checks then metrics follow the report overview prose."""
     _scaffold(tmp_path)
     (tmp_path / "journal" / "01_x.md").write_text(
         "# design\n\n## Results\n\n"
@@ -1132,22 +1133,20 @@ def test_site_build_embeds_audit_results_in_order(
     )
     results = tmp_path / "scratch" / "results" / "01_x"
     results.mkdir(parents=True)
-    (results / "report.html").write_text("<html>report</html>\n", encoding="utf-8")
-    (results / "checks.html").write_text("<html>checks</html>\n", encoding="utf-8")
-    (results / "metrics.html").write_text("<html>metrics</html>\n", encoding="utf-8")
+    (results / "checks.html").write_text("<div>checks</div>\n", encoding="utf-8")
+    (results / "metrics.html").write_text("<div>metrics</div>\n", encoding="utf-8")
     monkeypatch.setattr(site_mod.subprocess, "run", _ok_mkdocs(tmp_path))
     monkeypatch.chdir(tmp_path)
     result = CliRunner().invoke(cli, ["site", "build"])
     assert result.exit_code == 0, result.output
-    staged = (tmp_path / "_build" / "docs" / "01_x.md").read_text(encoding="utf-8")
+    staged = (tmp_path / "_build" / "docs" / "journal" / "01_x.md").read_text(
+        encoding="utf-8"
+    )
     assert staged.index("### Report overview") < staged.index("### Checks")
     assert staged.index("### Checks") < staged.index("### Metrics")
-    assert staged.index("One issue (SKD003).") < staged.index(
-        '<iframe src="01_x.checks.html"'
-    )
-    assert staged.index('<iframe src="01_x.checks.html"') < staged.index(
-        '<iframe src="01_x.metrics.html"'
-    )
+    assert staged.index("One issue (SKD003).") < staged.index("<div>checks</div>")
+    assert staged.index("<div>checks</div>") < staged.index("### Metrics")
+    assert staged.index("MAE 3421.") < staged.index("<div>metrics</div>")
 
 
 def test_site_build_without_results_section_skips_scratch_html(
@@ -1160,15 +1159,19 @@ def test_site_build_without_results_section_skips_scratch_html(
     )
     results = tmp_path / "scratch" / "results" / "01_x"
     results.mkdir(parents=True)
-    (results / "report.html").write_text("<html>report</html>\n", encoding="utf-8")
+    (results / "roc.html").write_text("<html>roc</html>\n", encoding="utf-8")
     monkeypatch.setattr(site_mod.subprocess, "run", _ok_mkdocs(tmp_path))
     monkeypatch.chdir(tmp_path)
     result = CliRunner().invoke(cli, ["site", "build"])
     assert result.exit_code == 0, result.output
-    staged = (tmp_path / "_build" / "docs" / "01_x.md").read_text(encoding="utf-8")
+    staged = (tmp_path / "_build" / "docs" / "journal" / "01_x.md").read_text(
+        encoding="utf-8"
+    )
     assert "## Results" not in staged
-    assert '<iframe src="01_x.report.html"' not in staged
-    assert (tmp_path / "_build" / "docs" / "01_x.report.html").is_file()
+    assert "<iframe" not in staged
+    assert (
+        tmp_path / "_build" / "docs" / "scratch" / "results" / "01_x" / "roc.html"
+    ).is_file()
 
 
 def test_site_build_embeds_assets(
@@ -1190,14 +1193,52 @@ def test_site_build_embeds_assets(
     monkeypatch.chdir(tmp_path)
     result = CliRunner().invoke(cli, ["site", "build"])
     assert result.exit_code == 0, result.output
-    staged = (tmp_path / "_build" / "docs" / "data_analysis.md").read_text(
-        encoding="utf-8"
-    )
+    staged = (
+        tmp_path / "_build" / "docs" / "data_analysis" / "data_analysis.md"
+    ).read_text(encoding="utf-8")
     assert "![spatial](plot.png)" in staged
     assert "![again](plot.png)" in staged
     assert staged.count('<iframe src="data_analysis_adult.html"') == 1
     assert "[data_analysis_adult.html](data_analysis_adult.html)" in staged
     assert 'class="skore-embed"' in staged
+
+
+def test_site_build_inlines_fragment_html_and_frames_documents(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A TableReport snippet is pasted in; a whole document keeps its iframe."""
+    _scaffold(tmp_path)
+    analysis = tmp_path / "data_analysis"
+    analysis.mkdir()
+    (analysis / "data_analysis.md").write_text(
+        '<iframe src="data_analysis_adult.html" width="100%" height="640"></iframe>\n\n'
+        "[Open the report](data_analysis_adult.html)\n\n"
+        "- Plot: [scatter](scatter.html)\n"
+        "- Gone: [absent](absent.html)\n",
+        encoding="utf-8",
+    )
+    snippet = (
+        '<div id="report-1">\n\n<skrub-table-report></skrub-table-report>\n</div>\n'
+    )
+    (analysis / "data_analysis_adult.html").write_text(snippet, encoding="utf-8")
+    (analysis / "scatter.html").write_text(
+        "<!DOCTYPE html><html><body>plot</body></html>\n", encoding="utf-8"
+    )
+    monkeypatch.setattr(site_mod.subprocess, "run", _ok_mkdocs(tmp_path))
+    monkeypatch.chdir(tmp_path)
+    result = CliRunner().invoke(cli, ["site", "build"])
+    assert result.exit_code == 0, result.output
+    docs = tmp_path / "_build" / "docs"
+    staged = (docs / "data_analysis" / "data_analysis.md").read_text(encoding="utf-8")
+    assert staged.count(snippet.strip()) == 1
+    assert 'class="skore-inline"' in staged
+    assert '<iframe src="data_analysis_adult.html"' not in staged
+    assert "[Open the report](data_analysis_adult.html)" in staged
+    assert '<iframe src="scatter.html"' in staged
+    assert '<iframe src="absent.html"' in staged
+    assert "skrub-table-report" in (
+        docs / "data_analysis" / "data_analysis_adult.html"
+    ).read_text(encoding="utf-8")
 
 
 def test_site_build_keeps_authored_iframe(
@@ -1215,9 +1256,9 @@ def test_site_build_keeps_authored_iframe(
     monkeypatch.chdir(tmp_path)
     result = CliRunner().invoke(cli, ["site", "build"])
     assert result.exit_code == 0, result.output
-    staged = (tmp_path / "_build" / "docs" / "data_analysis.md").read_text(
-        encoding="utf-8"
-    )
+    staged = (
+        tmp_path / "_build" / "docs" / "data_analysis" / "data_analysis.md"
+    ).read_text(encoding="utf-8")
     assert staged.count('src="data_analysis_adult.html"') == 1
     assert 'class="skore-embed"' in staged
 
@@ -1237,8 +1278,11 @@ def test_site_build_stub_index_in_nav(
     assert result.exit_code == 0, result.output
     nav = (tmp_path / "_build" / "mkdocs.yml").read_text(encoding="utf-8")
     assert "Home: index.md" in nav
-    assert "Exploratory data analysis: data_analysis.md" in nav
+    assert "Exploratory data analysis: data_analysis/data_analysis.md" in nav
     assert (tmp_path / "_build" / "docs" / "index.md").is_file()
+    assert "  homepage: index.html\n" in nav
+    launcher = (tmp_path / "report.html").read_text(encoding="utf-8")
+    assert "url=html/index.html" in launcher
 
 
 def test_site_build_unscaffolded(
@@ -1252,11 +1296,13 @@ def test_site_build_unscaffolded(
 
 
 def test_site_helpers_cover_link_suffix_and_empty_nav(tmp_path: Path) -> None:
-    """Link rewriting, bare suffixes, and an empty nav stay stable."""
-    assert site_mod.result_dest("01_x", "plot", "png") == "01_x.plot.png"
-    original = "[docs](https://example.com/a) and [here]()"
-    assert site_mod.rewrite_markdown_links(original, {"a.md"}) == original
-    rendered = site_mod.render_mkdocs_yml([], stub_home=False, site_name="demo")
+    """Bare suffixes and an empty nav stay stable."""
+    assert site_mod.result_dest("01_x", "plot", "png") == (
+        "scratch/results/01_x/plot.png"
+    )
+    rendered = site_mod.render_mkdocs_yml(
+        [], stub_home=True, site_name="demo", entry="index.html"
+    )
     assert rendered.rstrip().endswith("- Home: index.md")
     _scaffold(tmp_path)
     site_mod.ensure_site_gitignore(tmp_path)
@@ -1287,9 +1333,9 @@ def test_site_build_includes_mkdocs_stdout(
         stderr = ""
 
     def fake_run(argv: list[str], **kwargs: object) -> Result:
-        out = tmp_path / "html"
-        out.mkdir(parents=True, exist_ok=True)
-        (out / "index.html").write_text("<html></html>\n", encoding="utf-8")
+        entry = tmp_path / "html" / site_mod.entry_page(tmp_path)
+        entry.parent.mkdir(parents=True, exist_ok=True)
+        entry.write_text("<html></html>\n", encoding="utf-8")
         return Result()
 
     monkeypatch.setattr(site_mod.subprocess, "run", fake_run)
@@ -1305,28 +1351,31 @@ def test_inject_skips_missing_heading_and_loose_markers(tmp_path: Path) -> None:
     stem = "01_x"
     results = tmp_path / "scratch" / "results" / stem
     results.mkdir(parents=True)
-    (results / "report.html").write_text("<p>report</p>\n", encoding="utf-8")
+    (results / "metrics.html").write_text("<p>metrics</p>\n", encoding="utf-8")
     (results / "curves.html").write_text("<p>curves</p>\n", encoding="utf-8")
     (results / "nested").mkdir()
     (results / "plot.png").write_bytes(b"\x89PNG")
+    (results / "report.txt").write_text("repr\n", encoding="utf-8")
     page = site_mod.Page(
-        "Trial", tmp_path / "trial.md", f"{stem}.md", section="Experiments"
+        "Trial", tmp_path / "trial.md", f"journal/{stem}.md", section="Experiments"
     )
-    text = "## Results\n\nProse without a report heading.\n"
-    assert 'src="01_x.report.html"' not in site_mod.inject_results(text, page, tmp_path)
+    text = "## Results\n\nProse without a metrics heading.\n"
+    assert site_mod.inject_results(text, page, tmp_path) == text
 
     core = "## Method\n\n<!-- results-embed: report -->\n"
-    assert site_mod._inject_marked_embeds(core, tmp_path, stem, "Trial") == core
+    assert site_mod._inject_marked_embeds(core, tmp_path, page) == core
     missing = "## Method\n\n<!-- results-embed: absent -->\n"
-    assert site_mod._inject_marked_embeds(missing, tmp_path, stem, "Trial") == missing
+    assert site_mod._inject_marked_embeds(missing, tmp_path, page) == missing
     loose = "## Method\n\n<!--  results-embed: curves -->\n"
-    assert site_mod._inject_marked_embeds(loose, tmp_path, stem, "Trial") == loose
+    assert site_mod._inject_marked_embeds(loose, tmp_path, page) == loose
 
     docs = tmp_path / "docs"
     docs.mkdir()
     site_mod._copy_result_html(tmp_path, docs, page)
-    assert (docs / "01_x.plot.png").is_file()
-    assert not any(path.name.startswith("01_x.nested") for path in docs.iterdir())
+    staged = docs / "scratch" / "results" / "01_x"
+    assert (staged / "plot.png").is_file()
+    assert not (staged / "nested").exists()
+    assert not (staged / "report.txt").exists()
 
 
 def test_inject_notebook_adds_a_trailing_newline() -> None:
@@ -1334,9 +1383,110 @@ def test_inject_notebook_adds_a_trailing_newline() -> None:
     page = site_mod.Page(
         "Trial",
         Path("trial.md"),
-        "01_x.md",
-        notebook=Path("01_x.nb.html"),
+        "data_analysis/data_analysis.md",
+        notebook=Path("/work/data_analysis/data_analysis.nb.html"),
     )
-    text = site_mod.inject_notebook("hello", page)
+    text = site_mod.inject_notebook("hello", page, Path("/work"))
     assert text.startswith("hello\n")
-    assert "## Notebook" in text
+    assert _tab_link("data_analysis.nb.html", "Open the notebook") in text
+    assert site_mod.inject_notebook(text, page, Path("/work")) == text
+
+
+def test_as_embed_document_links_the_stylesheet_from_its_folder() -> None:
+    """A fragment staged in a subfolder reaches the shared baseline CSS."""
+    deep = site_mod.as_embed_document("<p>x</p>", "scratch/results/01_x")
+    assert 'href="../../../assets/skore/embed.css"' in deep
+    assert 'href="assets/skore/embed.css"' in site_mod.as_embed_document("<p>x</p>")
+
+
+def test_site_build_mirrors_the_workspace_so_authored_links_resolve(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Links written between source files keep working between staged files."""
+    _scaffold(tmp_path)
+    (tmp_path / "data_analysis").mkdir()
+    (tmp_path / "data_analysis" / "data_analysis.md").write_text(
+        "# eda\n\n![plot](plot.png)\n", encoding="utf-8"
+    )
+    (tmp_path / "data_analysis" / "plot.png").write_bytes(b"eda")
+    (tmp_path / "journal" / "figures").mkdir()
+    (tmp_path / "journal" / "figures" / "roc.png").write_bytes(b"roc")
+    (tmp_path / "journal" / "plot.png").write_bytes(b"journal")
+    (tmp_path / "journal" / "JOURNAL.md").write_text(
+        "# journal\n\n[eda](../data_analysis/data_analysis.md) "
+        "[note](01_x.md) ![roc](figures/roc.png)\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "journal" / "01_x.md").write_text(
+        "# design\n\n[eda](../data_analysis/data_analysis.md) "
+        "![eda plot](../data_analysis/plot.png) ![roc](figures/roc.png) "
+        "[home](JOURNAL.md)\n",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(site_mod.subprocess, "run", _ok_mkdocs(tmp_path))
+    monkeypatch.chdir(tmp_path)
+    result = CliRunner().invoke(cli, ["site", "build"])
+    assert result.exit_code == 0, result.output
+    docs = tmp_path / "_build" / "docs"
+    home = (docs / "journal" / "JOURNAL.md").read_text(encoding="utf-8")
+    assert "[eda](../data_analysis/data_analysis.md)" in home
+    assert "[note](01_x.md)" in home
+    assert "![roc](figures/roc.png)" in home
+    note = (docs / "journal" / "01_x.md").read_text(encoding="utf-8")
+    assert "[eda](../data_analysis/data_analysis.md)" in note
+    assert "![eda plot](../data_analysis/plot.png)" in note
+    for staged in (
+        "journal/figures/roc.png",
+        "journal/plot.png",
+        "data_analysis/plot.png",
+    ):
+        assert (docs / staged).is_file(), staged
+    assert (docs / "data_analysis" / "plot.png").read_bytes() == b"eda"
+    assert (docs / "journal" / "plot.png").read_bytes() == b"journal"
+
+
+def test_site_build_reports_broken_links_from_mkdocs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """MkDocs checks every link; the ones it cannot resolve reach the output."""
+    _scaffold(tmp_path)
+
+    def fake_run(argv: list[str], **kwargs: object) -> object:
+        completed = _ok_mkdocs(tmp_path)(argv)
+        completed.stderr = (
+            "INFO    -  Building documentation\n"
+            "WARNING -  Doc file 'journal/01_x.md' contains a link "
+            "'../figures/roc.png', but the target is not found.\n"
+        )
+        return completed
+
+    monkeypatch.setattr(site_mod.subprocess, "run", fake_run)
+    monkeypatch.chdir(tmp_path)
+    result = CliRunner().invoke(cli, ["site", "build"])
+    assert result.exit_code == 0, result.output
+    assert "contains a link '../figures/roc.png'" in result.output
+    assert "Building documentation" not in result.output
+    assert result.output.endswith(f"{site_mod.launcher_url(tmp_path)}\n")
+
+
+def test_site_build_if_stale_rebuilds_when_a_journal_figure_changes(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A figure next to a journal note is a site input like any other."""
+    _scaffold(tmp_path)
+    figure = tmp_path / "journal" / "roc.png"
+    figure.write_bytes(b"one")
+    calls: list[list[str]] = []
+
+    def fake_run(argv: list[str], **kwargs: object) -> object:
+        calls.append(argv)
+        return _ok_mkdocs(tmp_path)(argv)
+
+    monkeypatch.setattr(site_mod.subprocess, "run", fake_run)
+    monkeypatch.chdir(tmp_path)
+    assert CliRunner().invoke(cli, ["site", "build", "--if-stale"]).exit_code == 0
+    assert CliRunner().invoke(cli, ["site", "build", "--if-stale"]).exit_code == 0
+    assert len(calls) == 1
+    figure.write_bytes(b"two")
+    assert CliRunner().invoke(cli, ["site", "build", "--if-stale"]).exit_code == 0
+    assert len(calls) == 2

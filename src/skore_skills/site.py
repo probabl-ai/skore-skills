@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import html
 import json
+import posixpath
 import re
 import shutil
 import subprocess
@@ -22,10 +23,8 @@ BUILD_STATE = BUILD_DIR / "site-state.json"
 SITE_ASSETS = Path(__file__).with_name("site_assets")
 STAGED_ASSETS = Path("assets") / "skore"
 GITIGNORE_LINES = (f"{BUILD_DIR.as_posix()}/", f"{HTML_DIR}/")
-MISSING_INDEX = "mkdocs build did not write html/index.html"
 MISSING_MKDOCS = "mkdocs-material is required; add it with add-python-package"
 ASSET_SUFFIXES = {".html", ".png", ".jpg", ".jpeg", ".svg", ".gif"}
-MD_LINK = re.compile(r"\[([^\]]+)\]\(([^)]+)\)")
 LINK = re.compile(r"(?<!!)\[([^\]]*)\]\(([^)\s]+)\)")
 IMAGE_LINK = re.compile(
     r"(?<!!)\[([^\]]*)\]\(([^)\s]+\.(?:png|jpe?g|svg|gif))\)", re.IGNORECASE
@@ -44,48 +43,17 @@ DATA_UNDERSTANDING_SECTION = re.compile(
     r"(?ms)^## Data understanding\s*\n.*?(?=^## |\Z)",
 )
 RESULT_ITEMS = (
-    ("report", "Report overview"),
     ("checks", "Checks"),
     ("metrics", "Metrics"),
 )
 RESULT_EMBED = re.compile(r"<!--\s*results-embed:\s*([A-Za-z0-9_-]+)\s*-->")
 CORE_RESULT_KINDS = {kind for kind, _heading in RESULT_ITEMS}
+UNSTAGED_RESULT_HTML = CORE_RESULT_KINDS | {"report"}
 RESULT_IMAGE_SUFFIXES = {".png", ".jpg", ".jpeg", ".svg", ".gif"}
-# Staged report pages measure themselves and post their height up, so the
-# viewer fits the report exactly. Reading the document from the parent is
-# blocked under ``file://``; postMessage is not. Measure the body box, not
-# the root: the root stretches to the frame and would never shrink back.
-# A skrub node page sizes itself with ``100vh``. Measuring that and
-# resizing the frame shrinks the iframe on every click, so those pages
-# ask the viewer to drop the inline height and use its own CSS height.
-HEIGHT_REPORTER = """<script>
-(() => {
-  const post = () => {
-    if (document.querySelector(".data_op-node")) {
-      parent.postMessage({ type: "skore-embed-height", fill: true }, "*");
-      return;
-    }
-    const style = getComputedStyle(document.body);
-    parent.postMessage(
-      {
-        type: "skore-embed-height",
-        height: Math.ceil(
-          document.body.getBoundingClientRect().height +
-            parseFloat(style.marginTop) +
-            parseFloat(style.marginBottom),
-        ),
-      },
-      "*",
-    );
-  };
-  addEventListener("load", post);
-  new ResizeObserver(post).observe(document.body);
-})();
-</script>
-"""
 EMBED_STYLESHEET = (STAGED_ASSETS / "embed.css").as_posix()
-EMBED_HOST_ID = "skore-embed-host"
-EMBED_TEMPLATE_ID = "skore-embed-template"
+NOTEBOOK_SUFFIX = ".nb.html"
+HOME_PAGE = "journal/JOURNAL.md"
+STUB_HOME = "index.md"
 # A ``_repr_html_`` fragment inherits its typography from whatever page
 # holds it. Alone in a viewer it would inherit nothing, so wrap it in a
 # document that carries the charset and the site font.
@@ -97,22 +65,8 @@ EMBED_DOCUMENT = """<!DOCTYPE html>
 <link rel="stylesheet" href="{stylesheet}">
 </head>
 <body>
-{body}{reporter}</body>
+{body}</body>
 </html>
-"""
-# Fragments without a shadow root of their own get one here, so the
-# baseline stylesheet and the fragment's own rules cannot collide.
-EMBED_SHADOW_HOST = """<div id="{host}"></div>
-<template id="{template}">
-<link rel="stylesheet" href="{stylesheet}">
-{fragment}</template>
-<script>
-(() => {{
-  const host = document.getElementById("{host}");
-  const template = document.getElementById("{template}");
-  host.attachShadow({{ mode: "open" }}).append(template.content.cloneNode(true));
-}})();
-</script>
 """
 
 
@@ -129,25 +83,25 @@ class Page:
 
 
 def _notebook_for(directory: Path, stem: str) -> Path | None:
-    path = directory / f"{stem}.nb.html"
+    path = directory / f"{stem}{NOTEBOOK_SUFFIX}"
     return path if path.is_file() else None
 
 
-def notebook_dest(page: Page) -> str:
-    """Return the staged file name of the notebook page for ``page``."""
-    return f"{Path(page.dest_name).stem}.nb.html"
+def docs_path(root: Path, path: Path) -> str:
+    """Return the staged path of a workspace file. The docs tree mirrors it."""
+    return path.relative_to(root).as_posix()
 
 
-def audit_dest(page: Page) -> str:
-    """Return the staged file name of the audit notebook for ``page``."""
-    return f"{Path(page.dest_name).stem}.audit.nb.html"
+def link_from(page: Page, target: str) -> str:
+    """Return the docs path ``target`` as a link written on ``page``."""
+    return posixpath.relpath(target, posixpath.dirname(page.dest_name) or ".")
 
 
 def result_dest(stem: str, kind: str, suffix: str = ".html") -> str:
-    """Return the staged file name of a Results viewer."""
+    """Return the staged path of a Results viewer."""
     if not suffix.startswith("."):
         suffix = f".{suffix}"
-    return f"{stem}.{kind}{suffix}"
+    return f"scratch/results/{stem}/{kind}{suffix}"
 
 
 def result_source(
@@ -159,8 +113,8 @@ def result_source(
 
 
 def result_report_dest(stem: str, kind: str) -> str:
-    """Return the staged iframe path of a multi-page report."""
-    return f"{stem}.{kind}/index.html"
+    """Return the staged path of a multi-page report."""
+    return f"scratch/results/{stem}/{kind}/index.html"
 
 
 def result_report_source(root: Path, stem: str, kind: str) -> Path | None:
@@ -174,14 +128,14 @@ def collect_pages(root: Path) -> list[Page]:
     pages: list[Page] = []
     journal = root / "journal" / "JOURNAL.md"
     if journal.is_file():
-        pages.append(Page("Home", journal, "index.md"))
+        pages.append(Page("Home", journal, HOME_PAGE))
     analysis = root / "data_analysis" / "data_analysis.md"
     if analysis.is_file():
         pages.append(
             Page(
                 "Exploratory data analysis",
                 analysis,
-                "data_analysis.md",
+                "data_analysis/data_analysis.md",
                 _notebook_for(root / "data_analysis", "data_analysis"),
             )
         )
@@ -194,7 +148,7 @@ def collect_pages(root: Path) -> list[Page]:
                 Page(
                     path.stem,
                     path,
-                    path.name,
+                    f"journal/{path.name}",
                     _notebook_for(root / "experiments", path.stem),
                     "Experiments",
                     _notebook_for(root / "audit", path.stem),
@@ -222,27 +176,35 @@ def launcher_url(root: Path) -> str:
     return (root / launcher_name(root)).resolve().as_uri()
 
 
-def render_launcher(title: str) -> str:
-    """Return a ``file://``-safe redirect into ``html/index.html``."""
+def entry_page(root: Path) -> str:
+    """Return the built page the launcher opens, relative to ``html/``."""
+    if (root / HOME_PAGE).is_file():
+        return Path(HOME_PAGE).with_suffix(".html").as_posix()
+    return Path(STUB_HOME).with_suffix(".html").as_posix()
+
+
+def render_launcher(title: str, entry: str) -> str:
+    """Return a ``file://``-safe redirect into ``html/<entry>``."""
     safe = html.escape(title)
+    target = html.escape(f"{HTML_DIR}/{entry}", quote=True)
     return (
         "<!DOCTYPE html>\n"
         '<html lang="en">\n'
         "  <head>\n"
         '    <meta charset="utf-8">\n'
         f"    <title>{safe}</title>\n"
-        '    <meta http-equiv="refresh" content="0; url=html/index.html">\n'
-        '    <script>location.replace("html/index.html");</script>\n'
+        f'    <meta http-equiv="refresh" content="0; url={target}">\n'
+        f'    <script>location.replace("{target}");</script>\n'
         "  </head>\n"
         "  <body>\n"
-        f'    <p><a href="html/index.html">Open {safe}</a></p>\n'
+        f'    <p><a href="{target}">Open {safe}</a></p>\n'
         "  </body>\n"
         "</html>\n"
     )
 
 
 def render_mkdocs_yml(
-    pages: list[Page], *, stub_home: bool = False, site_name: str
+    pages: list[Page], *, stub_home: bool = False, site_name: str, entry: str
 ) -> str:
     """Return generated ``mkdocs.yml`` text for ``file://`` browsing."""
     lines = [
@@ -261,6 +223,7 @@ def render_mkdocs_yml(
         "  - pymdownx.arithmatex:",
         "      generic: true",
         "extra:",
+        f"  homepage: {entry}",
         "  polyfills:",
         "    - assets/skore/iframe-worker.js",
         "plugins:",
@@ -277,8 +240,8 @@ def render_mkdocs_yml(
         "  - assets/skore/katex-render.js",
         "nav:",
     ]
-    if stub_home and not any(page.dest_name == "index.md" for page in pages):
-        lines.append("  - Home: index.md")
+    if stub_home:
+        lines.append(f"  - Home: {STUB_HOME}")
     if pages:
         sections: dict[str, list[Page]] = {}
         for page in pages:
@@ -289,8 +252,6 @@ def render_mkdocs_yml(
         for title, children in sections.items():
             lines.append(f"  - {title}:")
             lines.extend(f"      - {page.title}: {page.dest_name}" for page in children)
-    elif not stub_home:
-        lines.append("  - Home: index.md")
     lines.append("")
     return "\n".join(lines)
 
@@ -300,7 +261,12 @@ def write_generated_config(root: Path, pages: list[Page], *, stub_home: bool) ->
     dest = root / GENERATED_CONFIG
     dest.parent.mkdir(parents=True, exist_ok=True)
     dest.write_text(
-        render_mkdocs_yml(pages, stub_home=stub_home, site_name=site_title(root)),
+        render_mkdocs_yml(
+            pages,
+            stub_home=stub_home,
+            site_name=site_title(root),
+            entry=entry_page(root),
+        ),
         encoding="utf-8",
     )
     return dest
@@ -321,59 +287,47 @@ def ensure_site_gitignore(root: Path) -> None:
     )
 
 
-def rewrite_markdown_links(text: str, dest_names: set[str]) -> str:
-    """Point Markdown links at files that exist in the flattened docs tree."""
-
-    def replace(match: re.Match[str]) -> str:
-        label, url = match.group(1), match.group(2)
-        if url.startswith(("#", "http:", "https:", "mailto:")):
-            return match.group(0)
-        path, sep, rest = url.partition("#")
-        if not path:
-            return match.group(0)
-        path, qsep, query = path.partition("?")
-        name = Path(path).name
-        if name in dest_names or Path(name).suffix.lower() in ASSET_SUFFIXES:
-            return f"[{label}]({name}{qsep}{query}{sep}{rest})"
-        return match.group(0)
-
-    return MD_LINK.sub(replace, text)
-
-
-def render_embed(name: str, title: str, *, autosize: bool = False) -> str:
-    """Return an accessible, fullscreen-capable HTML viewer."""
+def render_embed(name: str, title: str) -> str:
+    """Return a fixed-height iframe with a link to open the file alone."""
     safe_name = html.escape(name, quote=True)
     safe_title = html.escape(title)
-    sizing = " data-skore-autosize" if autosize else ""
     return (
-        f'<div class="skore-embed" data-skore-embed>\n'
-        f'  <div class="skore-embed__toolbar">\n'
-        f'    <span class="skore-embed__title">{safe_title}</span>\n'
-        f'    <div class="skore-embed__actions">\n'
-        f'      <a class="skore-button" href="{safe_name}" target="_blank" '
-        f'rel="noopener">Open separately</a>\n'
-        f'      <button class="skore-button" type="button" '
-        f'data-skore-fullscreen aria-pressed="false">\n'
-        f'        <svg viewBox="0 0 24 24" aria-hidden="true">'
-        f'<path d="M7 3H3v4h2V5h2V3zm12 4h2V3h-4v2h2v2zM5 17H3v4h4v-2H5v-2z'
-        f'm14 2h-2v2h4v-4h-2v2z"/></svg>\n'
-        f'        <span class="skore-button__label">Full screen</span>\n'
-        f"      </button>\n"
-        f"    </div>\n"
-        f"  </div>\n"
-        f'  <iframe src="{safe_name}" title="{safe_title}" '
-        f'loading="lazy"{sizing}></iframe>\n'
+        f'<div class="skore-embed">\n'
+        f'  <iframe src="{safe_name}" title="{safe_title}" loading="lazy"></iframe>\n'
+        f'  <p class="skore-embed__open">{new_tab_link(name, "Open separately")}</p>\n'
         f"</div>"
     )
 
 
-def embed_assets(text: str) -> str:
-    """Render asset links inline: images as embeds, HTML in viewers."""
-    seen = set(RAW_IFRAME.findall(text))
-    text = RAW_IFRAME.sub(
-        lambda match: render_embed(match.group(1), "Interactive report", autosize=True),
-        text,
+def new_tab_link(href: str, label: str) -> str:
+    """Return a link that opens in a new tab. Markdown cannot set a target."""
+    return (
+        f'<a href="{html.escape(href, quote=True)}" target="_blank" '
+        f'rel="noopener">{html.escape(label)}</a>'
     )
+
+
+def render_inline(fragment: str) -> str:
+    """Return an HTML fragment wrapped so Markdown leaves it alone."""
+    return f'<div class="skore-inline">\n{fragment.strip()}\n</div>'
+
+
+def render_html(name: str, source_dir: Path | None) -> str:
+    """Paste a fragment file into the page; any other HTML gets an iframe."""
+    if source_dir is not None and (source_dir / name).is_file():
+        text = (source_dir / name).read_text(encoding="utf-8")
+        if not is_document(text):
+            return render_inline(text)
+    return render_embed(name, "Interactive report")
+
+
+def embed_assets(text: str, source_dir: Path | None = None) -> str:
+    """Render asset links inline: images as images, HTML pasted or framed.
+
+    ``source_dir`` holds the HTML files that the Markdown refers to by name.
+    """
+    seen = set(RAW_IFRAME.findall(text))
+    text = RAW_IFRAME.sub(lambda match: render_html(match.group(1), source_dir), text)
     embedded: list[str] = []
     for line in text.splitlines():
         embedded.append(IMAGE_LINK.sub(r"![\1](\2)", line))
@@ -382,45 +336,43 @@ def embed_assets(text: str) -> str:
             if Path(name).suffix.lower() != ".html" or name in seen:
                 continue
             seen.add(name)
-            embedded.extend(
-                ["", render_embed(name, "Interactive report", autosize=True)]
-            )
+            embedded.extend(["", render_html(name, source_dir)])
     return "\n".join(embedded) + "\n"
 
 
-def inject_notebook(text: str, page: Page) -> str:
-    """Insert paired experiment viewers or append one analysis viewer."""
+def inject_notebook(text: str, page: Page, root: Path) -> str:
+    """Link the paired notebooks. They open as pages of their own."""
     if page.section == "Experiments":
-        viewers: list[str] = []
-        for source, heading, name in (
-            (page.notebook, "Evaluation notebook", notebook_dest(page)),
-            (page.audit, "Audit notebook", audit_dest(page)),
-        ):
-            if source is None:
-                continue
-            embed = render_embed(name, f"{page.title} {heading.lower()}")
-            viewers.append(f"### {heading}\n\n{embed}")
-
+        links = [
+            f"- {new_tab_link(link_from(page, docs_path(root, source)), heading)}"
+            for source, heading in (
+                (page.notebook, "Evaluation notebook"),
+                (page.audit, "Audit notebook"),
+            )
+            if source is not None
+        ]
         section = "## Notebooks\n"
-        if viewers:
-            section += "\n" + "\n\n".join(viewers) + "\n"
+        if links:
+            section += "\n" + "\n".join(links) + "\n"
 
         if NOTEBOOKS_SECTION.search(text):
-            return NOTEBOOKS_SECTION.sub(section, text, count=1)
-        if not viewers:
+            return NOTEBOOKS_SECTION.sub(lambda _match: section, text, count=1)
+        if not links:
             return text
         return f"{text.rstrip()}\n\n{section}"
 
-    for source, heading, name in (
-        (page.notebook, "Notebook", notebook_dest(page)),
-        (page.audit, "Audit", audit_dest(page)),
+    for source, heading, label in (
+        (page.notebook, "Notebook", "Open the notebook"),
+        (page.audit, "Audit", "Open the audit notebook"),
     ):
-        if source is None or f'src="{name}"' in text:
+        if source is None:
+            continue
+        name = link_from(page, docs_path(root, source))
+        if f'href="{name}"' in text:
             continue
         if not text.endswith("\n"):
             text += "\n"
-        embed = render_embed(name, f"{page.title} {heading.lower()}")
-        text = f"{text}\n## {heading}\n\n{embed}\n"
+        text = f"{text}\n## {heading}\n\n{new_tab_link(name, label)}\n"
     return text
 
 
@@ -452,36 +404,56 @@ def _append_after_embed_marker(section: str, slug: str, embed: str) -> str:
     return section.replace(marker, f"{marker}\n\n{embed}\n", 1)
 
 
-def _result_embed(root: Path, stem: str, slug: str, title: str) -> str | None:
-    """Return an HTML or image embed for a scratch snapshot."""
+def _result_embed(root: Path, page: Page, slug: str, title: str) -> str | None:
+    """Return what the page shows for a scratch snapshot.
+
+    Checks and metrics are HTML fragments pasted into the page. An image
+    is shown as is. A report directory is a link that opens in a new tab.
+    Other HTML sits in an iframe.
+    """
+    stem = Path(page.dest_name).stem
+    parts: list[str] = []
+    for suffix in sorted(RESULT_IMAGE_SUFFIXES):
+        if result_source(root, stem, slug, suffix) is not None:
+            name = link_from(page, result_dest(stem, slug, suffix))
+            parts.append(f"![{title}]({name})")
+            break
     if result_report_source(root, stem, slug) is not None:
-        return render_embed(result_report_dest(stem, slug), title, autosize=True)
-    html = result_source(root, stem, slug, ".html")
-    if html is not None:
-        name = result_dest(stem, slug, ".html")
-        return render_embed(name, title, autosize=True)
-    for suffix in RESULT_IMAGE_SUFFIXES:
-        image = result_source(root, stem, slug, suffix)
-        if image is not None:
-            name = result_dest(stem, slug, suffix)
-            return f"![{title}]({name})"
-    return None
+        name = link_from(page, result_report_dest(stem, slug))
+        parts.append(new_tab_link(name, f"Open the full {slug} report"))
+        return "\n\n".join(parts)
+    source = result_source(root, stem, slug, ".html")
+    if source is not None and slug in CORE_RESULT_KINDS:
+        parts.append(render_inline(source.read_text(encoding="utf-8")))
+    elif source is not None:
+        name = link_from(page, result_dest(stem, slug))
+        parts.append(render_embed(name, title))
+    return "\n\n".join(parts) or None
 
 
-def _inject_marked_embeds(section: str, root: Path, stem: str, title: str) -> str:
+def _inject_marked_embeds(section: str, root: Path, page: Page) -> str:
     """Append scratch snapshots after ``results-embed`` comments in ``section``."""
+    stem = Path(page.dest_name).stem
     for slug in RESULT_EMBED.findall(section):
-        if slug in CORE_RESULT_KINDS:
+        if slug in UNSTAGED_RESULT_HTML:
             continue
-        embed = _result_embed(root, stem, slug, f"{title} {slug}")
+        embed = _result_embed(root, page, slug, f"{page.title} {slug}")
         if embed is None:
             continue
         names = [
-            result_report_dest(stem, slug),
-            result_dest(stem, slug, ".html"),
-            *(result_dest(stem, slug, suffix) for suffix in RESULT_IMAGE_SUFFIXES),
+            link_from(page, result_report_dest(stem, slug)),
+            link_from(page, result_dest(stem, slug, ".html")),
+            *(
+                link_from(page, result_dest(stem, slug, suffix))
+                for suffix in RESULT_IMAGE_SUFFIXES
+            ),
         ]
-        if any(f'src="{name}"' in section or f"]({name})" in section for name in names):
+        if any(
+            f'src="{name}"' in section
+            or f'href="{name}"' in section
+            or f"]({name})" in section
+            for name in names
+        ):
             continue
         section = _append_after_embed_marker(section, slug, embed)
     return section
@@ -491,37 +463,21 @@ def inject_results(text: str, page: Page, root: Path) -> str:
     """Embed scratch snapshots under Method and Results on experiment pages."""
     if page.section != "Experiments":
         return text
-    stem = Path(page.dest_name).stem
     method = METHOD_SECTION.search(text)
     if method is not None:
-        section = _inject_marked_embeds(method.group(0), root, stem, page.title)
+        section = _inject_marked_embeds(method.group(0), root, page)
         text = text[: method.start()] + section + text[method.end() :]
     match = RESULTS_SECTION.search(text)
     if match is None:
         return text
     section = match.group(0)
     for kind, heading in RESULT_ITEMS:
-        embed = _result_embed(root, stem, kind, f"{page.title} {heading.lower()}")
-        if embed is None:
-            continue
-        name = (
-            result_report_dest(stem, kind)
-            if result_report_source(root, stem, kind) is not None
-            else result_dest(stem, kind)
-        )
-        if f'src="{name}"' in section:
+        embed = _result_embed(root, page, kind, f"{page.title} {heading.lower()}")
+        if embed is None or embed in section:
             continue
         section = _append_under_heading(section, heading, embed)
-    section = _inject_marked_embeds(section, root, stem, page.title)
+    section = _inject_marked_embeds(section, root, page)
     return text[: match.start()] + section + text[match.end() :]
-
-
-def with_height_reporter(text: str) -> str:
-    """Return report HTML that posts its content height to the viewer."""
-    index = text.lower().rfind("</body>")
-    if index == -1:
-        return text + HEIGHT_REPORTER
-    return text[:index] + HEIGHT_REPORTER + text[index:]
 
 
 def is_document(text: str) -> bool:
@@ -534,53 +490,49 @@ def is_document(text: str) -> bool:
     return "<!doctype" in head or "<html" in head
 
 
-def carries_shadow_host(text: str) -> bool:
-    """Whether ``text`` already attaches a shadow root of its own.
+def as_embed_document(text: str, dest_dir: str = "") -> str:
+    """Return ``text`` as a whole HTML document, wrapping a fragment.
 
-    skore report and checks reprs ship a ``<template>`` holding their
-    styles plus the ``skoreInit`` call that hosts it.
-    """
-    return "<template id=" in text and "skoreInit" in text
-
-
-def as_embed_document(text: str) -> str:
-    """Return ``text`` as a self-contained document sized for its viewer.
-
-    A fragment that neither hosts its own shadow root nor runs scripts is
-    moved into one. The rest stay in the light DOM: skore and sklearn
-    resolve their containers through ``document``, which a shadow root
-    would hide from them, and scripts cloned out of a ``<template>`` never
-    run at all.
+    ``dest_dir`` is the docs folder the file is written to; the baseline
+    stylesheet is linked from there.
     """
     if is_document(text):
-        return with_height_reporter(text)
+        return text
     body = text if text.endswith("\n") else f"{text}\n"
-    if not carries_shadow_host(text) and "<script" not in text:
-        body = EMBED_SHADOW_HOST.format(
-            host=EMBED_HOST_ID,
-            template=EMBED_TEMPLATE_ID,
-            stylesheet=EMBED_STYLESHEET,
-            fragment=body,
+    stylesheet = posixpath.relpath(EMBED_STYLESHEET, dest_dir or ".")
+    return EMBED_DOCUMENT.format(stylesheet=stylesheet, body=body)
+
+
+def _copy_file(source: Path, dest: Path, dest_dir: str) -> None:
+    """Copy one staged file. HTML fragments become whole documents."""
+    dest.parent.mkdir(parents=True, exist_ok=True)
+    if source.suffix.lower() == ".html":
+        dest.write_text(
+            as_embed_document(source.read_text(encoding="utf-8"), dest_dir),
+            encoding="utf-8",
         )
-    return EMBED_DOCUMENT.format(
-        stylesheet=EMBED_STYLESHEET, body=body, reporter=HEIGHT_REPORTER
-    )
+    else:
+        shutil.copy2(source, dest)
 
 
-def _copy_data_analysis_assets(root: Path, docs: Path) -> None:
-    analysis = root / "data_analysis"
-    if not analysis.is_dir():
-        return
-    for path in analysis.iterdir():
-        if path.name.endswith(".nb.html") or not path.is_file():
-            continue
-        if path.suffix.lower() == ".html":
-            (docs / path.name).write_text(
-                as_embed_document(path.read_text(encoding="utf-8")),
-                encoding="utf-8",
-            )
-        elif path.suffix.lower() in ASSET_SUFFIXES:
-            shutil.copy2(path, docs / path.name)
+def _copy_folder_assets(root: Path, docs: Path, folder: str) -> None:
+    """Copy the figures and HTML next to the Markdown, keeping their paths."""
+    for path in sorted((root / folder).rglob("*")):
+        if (
+            path.is_file()
+            and path.suffix.lower() in ASSET_SUFFIXES
+            and not path.name.endswith(NOTEBOOK_SUFFIX)
+        ):
+            name = docs_path(root, path)
+            _copy_file(path, docs / name, posixpath.dirname(name))
+
+
+def _copy_notebooks(root: Path, docs: Path, page: Page) -> None:
+    for source in (page.notebook, page.audit):
+        if source is not None:
+            dest = docs / docs_path(root, source)
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, dest)
 
 
 def _copy_result_html(root: Path, docs: Path, page: Page) -> None:
@@ -590,45 +542,25 @@ def _copy_result_html(root: Path, docs: Path, page: Page) -> None:
     directory = root / "scratch" / "results" / stem
     if not directory.is_dir():
         return
-    for path in directory.iterdir():
+    for path in sorted(directory.iterdir()):
+        name = docs_path(root, path)
         if path.is_dir() and (path / "index.html").is_file():
-            dest_dir = docs / f"{stem}.{path.name}"
-            for item in path.rglob("*"):
-                if not item.is_file():
-                    continue
-                target = dest_dir / item.relative_to(path)
-                target.parent.mkdir(parents=True, exist_ok=True)
-                if item.suffix.lower() == ".html":
-                    target.write_text(
-                        as_embed_document(item.read_text(encoding="utf-8")),
-                        encoding="utf-8",
-                    )
-                else:
-                    shutil.copy2(item, target)
-            continue
-        if not path.is_file():
+            shutil.copytree(path, docs / name, dirs_exist_ok=True)
             continue
         suffix = path.suffix.lower()
-        dest = docs / f"{stem}.{path.stem}{suffix}"
-        if suffix == ".html":
-            dest.write_text(
-                as_embed_document(path.read_text(encoding="utf-8")),
-                encoding="utf-8",
-            )
-        elif suffix in RESULT_IMAGE_SUFFIXES:
-            shutil.copy2(path, dest)
+        if not path.is_file() or (
+            suffix == ".html" and path.stem in UNSTAGED_RESULT_HTML
+        ):
+            continue
+        if suffix == ".html" or suffix in RESULT_IMAGE_SUFFIXES:
+            _copy_file(path, docs / name, posixpath.dirname(name))
 
 
-def _write_stub_index(docs: Path) -> bool:
-    dest = docs / "index.md"
-    if dest.is_file():
+def _write_stub_index(docs: Path, pages: list[Page]) -> bool:
+    if any(page.dest_name == HOME_PAGE for page in pages):
         return False
-    dest.write_text("# Report\n", encoding="utf-8")
+    (docs / STUB_HOME).write_text("# Report\n", encoding="utf-8")
     return True
-
-
-def _copy_notebook(src: Path, dest: Path) -> None:
-    shutil.copy2(src, dest)
 
 
 def _copy_site_assets(docs: Path) -> None:
@@ -638,7 +570,7 @@ def _copy_site_assets(docs: Path) -> None:
 def write_nav_data(docs: Path, pages: list[Page], *, stub_home: bool) -> Path:
     """Write top-navigation data as JavaScript that works under ``file://``."""
     items: list[dict[str, object]] = []
-    if stub_home and not any(page.dest_name == "index.md" for page in pages):
+    if stub_home:
         items.append({"label": "Home", "href": "index.html"})
     sections: dict[str, list[dict[str, object]]] = {}
     for page in pages:
@@ -664,6 +596,9 @@ def write_nav_data(docs: Path, pages: list[Page], *, stub_home: bool) -> Path:
 def stage_docs(root: Path) -> tuple[Path, list[Page], bool]:
     """Copy report Markdown, assets, and existing companions into ``_build/docs``.
 
+    The docs tree mirrors the workspace, so a link written between source files
+    resolves between the staged ones and no link is rewritten.
+
     Returns
     -------
     tuple
@@ -674,28 +609,22 @@ def stage_docs(root: Path) -> tuple[Path, list[Page], bool]:
         shutil.rmtree(docs)
     docs.mkdir(parents=True)
     pages = collect_pages(root)
-    dest_names = {page.dest_name for page in pages}
-    dest_names.add("index.md")
     analysis_exists = (root / "data_analysis" / "data_analysis.md").is_file()
     for page in pages:
         text = page.source.read_text(encoding="utf-8")
-        if (
-            page.dest_name == "index.md"
-            and page.source.name == "JOURNAL.md"
-            and not analysis_exists
-        ):
+        if page.dest_name == HOME_PAGE and not analysis_exists:
             text = DATA_UNDERSTANDING_SECTION.sub("", text, count=1)
-        text = rewrite_markdown_links(text, dest_names)
-        text = inject_results(inject_notebook(embed_assets(text), page), page, root)
-        (docs / page.dest_name).write_text(text, encoding="utf-8")
-        if page.notebook is not None:
-            _copy_notebook(page.notebook, docs / notebook_dest(page))
-        if page.audit is not None:
-            _copy_notebook(page.audit, docs / audit_dest(page))
+        text = embed_assets(text, page.source.parent)
+        text = inject_results(inject_notebook(text, page, root), page, root)
+        dest = docs / page.dest_name
+        dest.parent.mkdir(parents=True, exist_ok=True)
+        dest.write_text(text, encoding="utf-8")
+        _copy_notebooks(root, docs, page)
         _copy_result_html(root, docs, page)
-    _copy_data_analysis_assets(root, docs)
+    for folder in ("journal", "data_analysis"):
+        _copy_folder_assets(root, docs, folder)
     _copy_site_assets(docs)
-    stub_home = _write_stub_index(docs)
+    stub_home = _write_stub_index(docs, pages)
     write_nav_data(docs, pages, stub_home=stub_home)
     return docs, pages, stub_home
 
@@ -732,16 +661,16 @@ def _site_input_paths(root: Path) -> list[Path]:
     for pattern in (
         "journal/*.md",
         "data_analysis/*.md",
-        "data_analysis/*.html",
-        "data_analysis/*.png",
-        "data_analysis/*.jpg",
-        "data_analysis/*.jpeg",
-        "data_analysis/*.svg",
-        "data_analysis/*.gif",
-        "experiments/*.nb.html",
-        "audit/*.nb.html",
+        f"experiments/*{NOTEBOOK_SUFFIX}",
+        f"audit/*{NOTEBOOK_SUFFIX}",
     ):
         paths.extend(path for path in root.glob(pattern) if path.is_file())
+    for folder in ("journal", "data_analysis"):
+        paths.extend(
+            path
+            for path in (root / folder).rglob("*")
+            if path.is_file() and path.suffix.lower() in ASSET_SUFFIXES
+        )
     results = root / "scratch" / "results"
     if results.is_dir():
         paths.extend(path for path in results.rglob("*") if path.is_file())
@@ -768,7 +697,7 @@ def _site_is_current(root: Path, fingerprint: str) -> bool:
     state = root / BUILD_STATE
     if not (
         state.is_file()
-        and (root / HTML_DIR / "index.html").is_file()
+        and (root / HTML_DIR / entry_page(root)).is_file()
         and (root / launcher_name(root)).is_file()
     ):
         return False
@@ -787,7 +716,7 @@ def build_site(root: Path, *, if_stale: bool = False) -> str:
     ValueError
         When the workspace is not scaffolded.
     RuntimeError
-        When ``mkdocs`` is missing, the build fails, or ``index.html`` is missing.
+        When ``mkdocs`` is missing, the build fails, or the entry page is missing.
     """
     if not is_scaffolded(root):
         raise ValueError("workspace is not scaffolded")
@@ -810,15 +739,20 @@ def build_site(root: Path, *, if_stale: bool = False) -> str:
     if completed.returncode:
         detail = (completed.stderr or completed.stdout or "mkdocs build failed").strip()
         raise RuntimeError(detail)
-    index = root / HTML_DIR / "index.html"
-    if not index.is_file():
-        raise RuntimeError(MISSING_INDEX)
+    entry = entry_page(root)
+    if not (root / HTML_DIR / entry).is_file():
+        raise RuntimeError(f"mkdocs build did not write {HTML_DIR}/{entry}")
     launcher = root / launcher_name(root)
-    launcher.write_text(render_launcher(site_title(root)), encoding="utf-8")
+    launcher.write_text(render_launcher(site_title(root), entry), encoding="utf-8")
     state = root / BUILD_STATE
     state.parent.mkdir(parents=True, exist_ok=True)
     state.write_text(json.dumps({"fingerprint": fingerprint}) + "\n", encoding="utf-8")
-    extra = (completed.stdout or "").strip()
+    broken = [
+        line.strip()
+        for line in (completed.stderr or "").splitlines()
+        if "contains a link" in line
+    ]
+    extra = "\n".join([(completed.stdout or "").strip(), *broken]).strip()
     url = launcher_url(root)
     if extra:
         return f"{extra}\n{url}"

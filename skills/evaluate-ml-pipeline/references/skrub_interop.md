@@ -293,8 +293,9 @@ to `scratch/results/01_baseline/materialize.py`, put the same
 `skore.evaluate` / `checks.summarize()` / `project.put` in the
 `<CALL>` block, and run that file once. The tail writes
 `report.html`, `report.txt`, `checks.html`, `metrics.html`,
-`id.txt`, and the Method viewer (`pipeline/` with `eval=False`,
-or `pipeline.html`). Write `locator.txt` from `id.txt`. When
+`id.txt`, and the Method files (`pipeline.svg` and the DataOp
+report `pipeline/`, from `eval=False`). Write `locator.txt`
+from `id.txt`. When
 notebooks are on, `notebook fill` the experiment with empty
 outputs. Do not `notebook convert` it.
 

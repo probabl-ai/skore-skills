@@ -16,7 +16,9 @@ RAW_<OTHER_SLUG>
 report_<OTHER_SLUG> = skrub.TableReport(
     RAW_<OTHER_SLUG>, title="<OTHER_SLUG>", verbose=0
 )
-report_<OTHER_SLUG>.write_html(OUT / "data_analysis_<OTHER_SLUG>.html")
+(OUT / "data_analysis_<OTHER_SLUG>.html").write_text(
+    report_<OTHER_SLUG>.html_snippet(), encoding="utf-8"
+)
 report_<OTHER_SLUG>
 
 # %% [markdown]

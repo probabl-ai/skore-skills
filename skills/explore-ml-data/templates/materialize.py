@@ -3,7 +3,7 @@
 Do not commit. This is the only EDA run. Do not execute
 ``data_analysis/data_analysis.py`` and do not ``notebook convert``
 or ``cells run`` it. Replace the ``<ANALYSIS>`` block with that
-file's loads, ``TableReport.write_html`` calls, and figure or HTML
+file's loads, ``TableReport.html_snippet`` writes, and figure or HTML
 saves, same paths. One load per family. Bind ``FAMILIES`` as
 ``(slug, raw)`` and ``FRAME`` to the pandas frame that contains
 every target (the first family when there is no target).
@@ -38,8 +38,9 @@ FAMILIES = [
 FRAME = None
 for slug, raw in FAMILIES:
     frame = raw.to_pandas() if hasattr(raw, "to_pandas") else raw
-    skrub.TableReport(raw, title=slug, verbose=0).write_html(
-        analysis / f"data_analysis_{slug}.html"
+    report = skrub.TableReport(raw, title=slug, verbose=0)
+    (analysis / f"data_analysis_{slug}.html").write_text(
+        report.html_snippet(), encoding="utf-8"
     )
     holds_targets = not TARGETS or all(column in frame.columns for column in TARGETS)
     if FRAME is None and holds_targets:

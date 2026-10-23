@@ -1,8 +1,7 @@
-/* Baseline for the standalone documents `site build` stages behind the
-   report viewers. Loaded in the document head, and again inside the
-   shadow root when a fragment does not ship one of its own. Fragments
-   inherit their typography from the host page, so without this they
-   render in the browser default serif. */
+/* Baseline for the standalone documents `site build` stages for HTML
+   fragments. Fragments inherit their typography from the page that
+   holds them, so without this they render in the browser default
+   serif. */
 
 @font-face {
   font-family: Geist;
@@ -16,8 +15,7 @@
   font-display: swap;
 }
 
-:root,
-:host {
+:root {
   --skore-gray-100: #f3f4f6;
   --skore-gray-200: #e5e7eb;
   --skore-gray-600: #4b5563;

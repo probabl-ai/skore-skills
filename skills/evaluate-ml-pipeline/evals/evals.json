@@ -17,7 +17,7 @@
         "Run `python -m skore_skills git end-turn --stage evaluate` at the end of the turn.",
         "If that command returns `invoke`, load `persist-ml-git`.",
         "Copy `templates/materialize.py` to `scratch/results/01_baseline/materialize.py` and run it once. The `<CALL>` block is the experiment's `skore.evaluate`, `report.checks.summarize()`, and `project.put`. Do not execute `experiments/01_baseline.py`. The tail writes `report.html` from `report._repr_html_()`, `report.txt` from `repr(report)`, `checks.html`, `metrics.html`, and `id.txt`. Write `locator.txt` from that id. The experiment file ends at `report.checks.summarize()`, `project.put`, and a bare `report`.",
-        "When `DataOp.skb.report` accepts `eval`, `materialize.py` writes `scratch/results/01_baseline/pipeline/` with `learner.report(eval=False, open=False, overwrite=True, output_dir=...)` on the in-memory learner (`reports_[0].estimator_` on a CV report). No `environment`. That does not fit. If `eval` is absent, write `pipeline.html` from `_repr_html_` or `estimator_html_repr`.",
+        "`materialize.py` writes, from `learner.data_op.skb` on the in-memory learner (`reports_[0].estimator_` on a CV report), `pipeline.svg` with `draw_graph().svg` and `scratch/results/01_baseline/pipeline/` with `report(eval=False, open=False, overwrite=True, output_dir=...)`. No `environment`. That does not fit.",
         "Run `python -m skore_skills loop locator --stem 01_baseline` and `python -m skore_skills loop artifacts --stem 01_baseline`.",
         "The response does NOT: Put catalog skill ids, HITL, `G-PKG-NAME` / `G-ENV-MGR` / `G-SKORE-MODE` / `G-TABULAR` / `G-CV-SPLITTER`, or `python -m skore_skills` / `env add` in user-facing questions or the close narrative (trailing `G-REPORT-LOCATOR` / `G-AUDIT-FINDING` and unmanaged `pixi add` / `uv add` / `pip install` lines are allowed).",
         "The response does NOT: Present splitter reasoning alone as model fitting.",
@@ -28,9 +28,9 @@
         "The response does NOT: Call `project.put` before `report.checks.summarize()`.",
         "The response does NOT: Pre-pin a different metric (e.g. `scoring=\"neg_mean_squared_error\"`). The locked comparison is `MAE`.",
         "The response does NOT: Run `git commit` in this skill or `git push`.",
-        "The response does NOT: Put `write_text` of `report.html`, `report.txt`, `locator.txt`, or `pipeline.html`, or `learner.report(...)`, in `experiments/01_baseline.py`. Those writes belong in `scratch/results/01_baseline/materialize.py`.",
+        "The response does NOT: Put `write_text` of `report.html`, `report.txt`, `locator.txt`, or `pipeline.svg`, or `skb.report(...)`, in `experiments/01_baseline.py`. Those writes belong in `scratch/results/01_baseline/materialize.py`.",
         "The response does NOT: Execute `experiments/01_baseline.py` or `notebook convert` it.",
-        "The response does NOT: Call `learner.report` or `full_report` without `eval=False`."
+        "The response does NOT: Call `skb.report` or `full_report` without `eval=False`."
       ],
       "tools": false,
       "sandbox": [],

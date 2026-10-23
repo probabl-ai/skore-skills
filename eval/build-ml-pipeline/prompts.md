@@ -54,10 +54,11 @@ violated.
   from `build_learner` / `build_pipeline`. A docstring that only
   names the forbidden equivalent is not a violation.
 - Use `skrub.X(...)` / `skrub.y(...)` as graph roots.
-- Call `learner.report(...)` or `full_report` without `eval=False`
-  (that fits). When `eval` is a parameter, a Method snapshot is
-  `learner.report(eval=False, open=False, overwrite=True, output_dir=...)`.
-  When `eval` is absent, use `_repr_html_` / `estimator_html_repr`.
+- Call `DatOp.skb.report(...)` or `DataOp.skb.full_report` without `eval=False`
+  or `SkrubLearner.report`
+  (that fits). The Method snapshot is `pipeline.svg` from
+  `learner.data_op.skb.draw_graph().svg` and
+  `learner.data_op.skb.report(eval=False, open=False, overwrite=True, output_dir=...)`.
 
 ---
 
@@ -605,8 +606,8 @@ violated.
 
 **Must do:**
 - After the unfitted Method snapshot
-  (`scratch/results/01_baseline/pipeline/` when `DataOp.skb.report`
-  accepts `eval`, otherwise `pipeline.html`), run
+  (`scratch/results/01_baseline/pipeline.svg` and
+  `scratch/results/01_baseline/pipeline/`), run
   `python -m skore_skills site build --if-stale` before `smoke run` and
   before the Evaluate question.
 - In the checkpoint, say the website has been updated and
@@ -758,9 +759,9 @@ violated.
 - Smoke is green.
 
 **Must do:**
-- Load `add-python-package` for `skrub`, then run
-  `learner.report(eval=False, open=False, overwrite=True, output_dir=...)`
-  once more.
+- Load `add-python-package` for `skrub`, then run the failed
+  `learner.data_op.skb.report(eval=False, open=False, overwrite=True, output_dir=...)`
+  or `draw_graph()` call once more.
 - Keep the skrub DataOps graph.
 
 **Must NOT do:**
@@ -768,9 +769,9 @@ violated.
 - Substitute `sklearn.Pipeline` / `make_pipeline`.
 - Run `pip install graphviz`.
 - Call `env add` or `env graphviz` from this skill.
-- Skip the report because `pipeline.html` already exists or
-  because `draw_graph` was optional.
-- Call `full_report`, or `learner.report` without `eval=False`.
+- Skip the report or the graph because Graphviz failed once.
+- Write a `pipeline.html` fallback instead.
+- Call `full_report`, or `skb.report` without `eval=False`.
 
 ---
 

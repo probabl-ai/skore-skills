@@ -274,60 +274,9 @@ body {
   box-shadow: 0 1px 2px rgb(17 24 39 / 6%);
 }
 
-.skore-embed__toolbar {
-  display: flex;
-  min-height: var(--numbers-48);
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--numbers-16);
-  padding: var(--numbers-8) var(--numbers-12) var(--numbers-8) var(--numbers-16);
-  background: var(--skore-gray-50);
-  border-bottom: var(--stroke-width-md) solid var(--skore-gray-200);
-}
-
-.skore-embed__title {
-  overflow: hidden;
-  font-weight: 600;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.skore-embed__actions {
-  display: flex;
-  align-items: center;
-  gap: var(--numbers-8);
-}
-
-.skore-button {
-  display: inline-flex;
-  min-height: var(--numbers-40);
-  align-items: center;
-  justify-content: center;
-  gap: var(--numbers-8);
-  padding: 0 var(--numbers-12);
-  color: var(--skore-gray-900) !important;
-  font: 500 var(--numbers-14) / var(--numbers-20) var(--md-text-font);
-  background: #fff;
-  border: var(--stroke-width-md) solid var(--skore-gray-200);
-  border-radius: var(--numbers-8);
-  cursor: pointer;
-}
-
-.skore-button:hover {
-  color: var(--skore-blue) !important;
-  border-color: var(--skore-blue);
-}
-
-.skore-button:focus-visible,
 .skore-sidebar-toggle:focus-visible {
   outline: 3px solid rgb(48 67 240 / 25%);
   outline-offset: 2px;
-}
-
-.skore-button svg {
-  width: var(--numbers-16);
-  height: var(--numbers-16);
-  fill: currentcolor;
 }
 
 .skore-embed iframe {
@@ -339,23 +288,53 @@ body {
   border: 0;
 }
 
-.skore-embed:fullscreen,
-.skore-embed.skore-embed--fullscreen {
-  position: fixed;
-  z-index: 1000;
-  inset: 0;
-  width: 100vw;
-  height: 100vh;
-  margin: 0;
-  border: 0;
-  border-radius: 0;
+.skore-inline {
+  margin: var(--numbers-24) 0;
+  overflow-x: auto;
 }
 
-.skore-embed:fullscreen iframe,
-.skore-embed.skore-embed--fullscreen iframe {
-  /* Beats the inline height a self-measuring report posts up. */
-  height: calc(100vh - var(--numbers-48)) !important;
-  min-height: 0;
+.skore-inline table.dataframe {
+  width: auto;
+  min-width: 20rem;
+  margin: 0;
+  font-size: var(--numbers-14);
+  font-variant-numeric: tabular-nums;
+  border: var(--stroke-width-md) solid var(--skore-gray-200);
+  border-collapse: collapse;
+}
+
+.skore-inline table.dataframe thead tr th,
+.skore-inline table.dataframe tbody tr th,
+.skore-inline table.dataframe tbody tr td {
+  padding: var(--numbers-8) var(--numbers-16);
+  text-align: right;
+  vertical-align: middle;
+  border: 0;
+  border-bottom: var(--stroke-width-md) solid var(--skore-gray-200);
+}
+
+.skore-inline table.dataframe thead tr th {
+  font-weight: 600;
+  text-align: center;
+  background: var(--skore-gray-100);
+}
+
+.skore-inline table.dataframe tbody tr th {
+  font-weight: 500;
+  text-align: left;
+  background: var(--skore-gray-50);
+}
+
+.skore-inline table.dataframe tbody tr:hover td {
+  background: var(--skore-gray-50);
+}
+
+.skore-embed__open {
+  margin: 0;
+  padding: var(--numbers-8) var(--numbers-16);
+  font-size: var(--numbers-14);
+  background: var(--skore-gray-50);
+  border-top: var(--stroke-width-md) solid var(--skore-gray-200);
 }
 
 .skore-sidebar-toggle {
@@ -394,7 +373,6 @@ body.skore-motion-ready .skore-topnav__link,
 body.skore-motion-ready .skore-topnav__trigger,
 body.skore-motion-ready .skore-topnav__menu-item,
 body.skore-motion-ready .skore-sidebar-toggle,
-body.skore-motion-ready .skore-button,
 body.skore-motion-ready .md-sidebar--secondary .md-nav__link {
   transition:
     color var(--skore-hover-duration) ease,
@@ -608,10 +586,6 @@ body.skore-motion-ready .skore-topnav__caret {
     border-right: 0;
     border-left: 0;
     border-radius: 0;
-  }
-
-  .skore-button__label {
-    display: none;
   }
 
   .skore-embed iframe {

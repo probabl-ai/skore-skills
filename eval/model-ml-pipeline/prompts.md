@@ -99,7 +99,7 @@ and `frame show` already returned `proceed` with a non-null
 **Must NOT do:**
 - Put catalog skill ids, HITL, `G-PKG-NAME` / `G-ENV-MGR` / `G-SKORE-MODE` / `G-TABULAR` / `G-CV-SPLITTER`, or `python -m skore_skills` / `env add` in user-facing questions or the close narrative (trailing `G-REPORT-LOCATOR` / `G-AUDIT-FINDING` and unmanaged `pixi add` / `uv add` / `pip install` lines are allowed).
 - Name the post-smoke Evaluate / Modify / Stop question, an
-  unfitted `site build`, or `pipeline.html` in this preview.
+  unfitted `site build`, or `pipeline.svg` in this preview.
 - Name `loop notebooks` or `notebook convert` on this preview.
   Notebooks stay off until a report exists.
 - Run `git commit` in this skill or `git push`.
@@ -128,7 +128,7 @@ and `frame show` already returned `proceed` with a non-null
 **Must NOT do:**
 - Put catalog skill ids, HITL, `G-PKG-NAME` / `G-ENV-MGR` / `G-SKORE-MODE` / `G-TABULAR` / `G-CV-SPLITTER`, or `python -m skore_skills` / `env add` in user-facing questions or the close narrative (trailing `G-REPORT-LOCATOR` / `G-AUDIT-FINDING` and unmanaged `pixi add` / `uv add` / `pip install` lines are allowed).
 - Name the post-smoke Evaluate / Modify / Stop question, an
-  unfitted `site build`, or `pipeline.html` in this preview.
+  unfitted `site build`, or `pipeline.svg` in this preview.
 - Name `loop notebooks` or `notebook convert` on this preview.
   Notebooks stay off until a report exists.
 - Convert while there is no persisted report
@@ -411,7 +411,7 @@ and `frame show` already returned `proceed` with a non-null
 **Must do:**
 - Dispatch `build-ml-pipeline`.
 - Require `python -m skore_skills site build` after the unfitted
-  Method snapshot (`pipeline/` or `pipeline.html`) and before
+  Method snapshot (`pipeline.svg` and `pipeline/`) and before
   the Evaluate question, inside that build.
 - Keep the post-loop `site build` for the same unevaluated report.
 - Say the website has been updated and include

@@ -1,4 +1,8 @@
 (() => {
+  const script = document.querySelector('script[src$="assets/skore/skore.js"]');
+  const siteRoot = script.src.replace(/assets\/skore\/skore\.js$/, "");
+  const siteUrl = (path) => new URL(path, siteRoot).href;
+
   const storage = {
     get(key) {
       try {
@@ -26,7 +30,7 @@
     const nav = document.createElement("nav");
     nav.className = "skore-topnav";
     nav.setAttribute("aria-label", "Project");
-    const current = location.pathname.split("/").pop() || "index.html";
+    const current = location.href.split(/[?#]/)[0];
 
     const closeMenus = (except) => {
       nav.querySelectorAll(".skore-topnav__dropdown").forEach((dropdown) => {
@@ -42,9 +46,9 @@
       if (!item.children) {
         const link = document.createElement("a");
         link.className = "skore-topnav__link";
-        link.href = item.href;
+        link.href = siteUrl(item.href);
         link.textContent = item.label;
-        if (item.href === current) link.setAttribute("aria-current", "page");
+        if (link.href === current) link.setAttribute("aria-current", "page");
         nav.append(link);
         return;
       }
@@ -70,10 +74,10 @@
       item.children.forEach((child) => {
         const link = document.createElement("a");
         link.className = "skore-topnav__menu-item";
-        link.href = child.href;
+        link.href = siteUrl(child.href);
         link.textContent = child.label;
         link.setAttribute("role", "menuitem");
-        if (child.href === current) {
+        if (link.href === current) {
           link.setAttribute("aria-current", "page");
           trigger.classList.add("skore-topnav__trigger--active");
         }
@@ -141,8 +145,8 @@
       button.setAttribute("aria-expanded", String(!collapsed));
       button.setAttribute("aria-label", `${collapsed ? "Show" : "Hide"} contents`);
       icon.src = collapsed
-        ? "assets/skore/icons/square-caret-right-regular.svg"
-        : "assets/skore/icons/square-caret-left-regular.svg";
+        ? siteUrl("assets/skore/icons/square-caret-right-regular.svg")
+        : siteUrl("assets/skore/icons/square-caret-left-regular.svg");
       label.textContent = collapsed ? "Show contents" : "Hide contents";
     };
 
@@ -157,88 +161,14 @@
     inner.append(footer);
   }
 
-  async function toggleFullscreen(button) {
-    const viewer = button.closest("[data-skore-embed]");
-    if (!viewer) return;
-
-    if (viewer.classList.contains("skore-embed--fullscreen")) {
-      viewer.classList.remove("skore-embed--fullscreen");
-      document.body.style.overflow = "";
-      updateFullscreenLabels();
-      return;
-    }
-    if (document.fullscreenElement === viewer) {
-      await document.exitFullscreen();
-      return;
-    }
-    if (viewer.requestFullscreen) {
-      try {
-        await viewer.requestFullscreen();
-        return;
-      } catch {
-        // Fall back to a fixed full-viewport card.
-      }
-    }
-    viewer.classList.toggle("skore-embed--fullscreen");
-    document.body.style.overflow = viewer.classList.contains(
-      "skore-embed--fullscreen",
-    )
-      ? "hidden"
-      : "";
-    updateFullscreenLabels();
-  }
-
-  function fitEmbedHeight(event) {
-    const data = event.data;
-    if (!data || data.type !== "skore-embed-height") return;
-    document.querySelectorAll("iframe[data-skore-autosize]").forEach((frame) => {
-      if (frame.contentWindow !== event.source) return;
-      if (data.fill) {
-        frame.style.removeProperty("height");
-        frame.style.removeProperty("min-height");
-        return;
-      }
-      frame.style.height = `${data.height}px`;
-      frame.style.minHeight = "0";
-    });
-  }
-
-  function updateFullscreenLabels() {
-    document.querySelectorAll("[data-skore-fullscreen]").forEach((button) => {
-      const viewer = button.closest("[data-skore-embed]");
-      const active =
-        document.fullscreenElement === viewer ||
-        viewer?.classList.contains("skore-embed--fullscreen");
-      button.setAttribute("aria-pressed", String(active));
-      const label = button.querySelector(".skore-button__label");
-      if (label) label.textContent = active ? "Exit full screen" : "Full screen";
-    });
-  }
-
   function initialize() {
     topNavigation();
     pageContents();
     tocButton();
-    document.querySelectorAll("[data-skore-fullscreen]").forEach((button) => {
-      if (button.dataset.skoreReady) return;
-      button.dataset.skoreReady = "true";
-      button.addEventListener("click", () => toggleFullscreen(button));
-    });
     requestAnimationFrame(() =>
       document.body.classList.add("skore-motion-ready"),
     );
   }
-
-  window.addEventListener("message", fitEmbedHeight);
-  document.addEventListener("fullscreenchange", updateFullscreenLabels);
-  document.addEventListener("keydown", (event) => {
-    if (event.key !== "Escape") return;
-    document
-      .querySelectorAll(".skore-embed--fullscreen")
-      .forEach((viewer) => viewer.classList.remove("skore-embed--fullscreen"));
-    document.body.style.overflow = "";
-    updateFullscreenLabels();
-  });
 
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initialize);

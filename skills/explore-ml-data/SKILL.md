@@ -265,7 +265,7 @@ not write or execute the notebook.
 2. Copy `templates/materialize.py` to
    `scratch/data_analysis/materialize.py`. Substitute `<pkg>`,
    `<TARGETS>`, `<TASKS>`, and the `<ANALYSIS>` block: the same
-   loads, `TableReport.write_html` calls, and figure or HTML
+   loads, `TableReport.html_snippet()` writes, and figure or HTML
    saves as the human file. `<TARGETS>` is a list of column
    names (`[]` when there is no target). `<TASKS>` is the
    parallel list of `classification` | `regression`, including

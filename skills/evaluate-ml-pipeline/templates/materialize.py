@@ -5,15 +5,13 @@ Do not commit. This is the only evaluation run. Do not execute
 Replace the ``<CALL>`` block with that file's fit / ``skore.evaluate`` /
 ``report.checks.summarize()`` / ``project.put``, same arguments and
 order. Leave the tail. It writes ``report.html``, ``report.txt``,
-``checks.html``, ``metrics.html``, ``id.txt``, and the Method viewer.
+``checks.html``, ``metrics.html``, ``id.txt``, and the Method graph
+(``pipeline.svg``) and DataOp report (``pipeline/``).
 The agent writes ``locator.txt`` from ``id.txt``. Do not call
-``full_report``. Do not call ``report`` without ``eval=False``.
+``full_report``. Do not call ``skb.report`` without ``eval=False``.
 """
 
-import inspect
-
 import skore
-from sklearn.utils import estimator_html_repr
 
 from <pkg> import PROJECT_ROOT
 
@@ -49,18 +47,11 @@ learner = (
     if hasattr(report, "estimator_")
     else report.reports_[0].estimator_
 )
-data_op = getattr(getattr(learner, "data_op", None), "skb", None)
-method = getattr(data_op, "report", None)
-if callable(method) and "eval" in inspect.signature(method).parameters:
-    learner.report(
-        eval=False,
-        open=False,
-        overwrite=True,
-        output_dir=results / "pipeline",
-    )
-else:
-    render = getattr(learner, "_repr_html_", None)
-    (results / "pipeline.html").write_text(
-        render() if callable(render) else estimator_html_repr(learner),
-        encoding="utf-8",
-    )
+data_op = learner.data_op.skb
+(results / "pipeline.svg").write_bytes(data_op.draw_graph().svg)
+data_op.report(
+    eval=False,
+    open=False,
+    overwrite=True,
+    output_dir=results / "pipeline",
+)

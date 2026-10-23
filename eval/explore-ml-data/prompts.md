@@ -668,8 +668,9 @@
   `data/b.parquet` (columns `id`, `z`).
 
 **Must do:**
-- Write a TableReport cell and HTML per family
-  (`data_analysis_family_a.html`, `data_analysis_family_b.html`).
+- Write a TableReport cell and HTML per family from
+  `report.html_snippet()` (`data_analysis_family_a.html`,
+  `data_analysis_family_b.html`).
 - Embed one glance iframe per family in
   `data_analysis/data_analysis.md`.
 - Put target-distribution, bivariate, and leakage cells only on

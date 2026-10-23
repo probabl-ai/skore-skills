@@ -63,12 +63,12 @@ violated.
   `locator.txt` from that id. The experiment file ends at
   `report.checks.summarize()`, `project.put`, and a bare
   `report`.
-- When `DataOp.skb.report` accepts `eval`, `materialize.py` writes
+- `materialize.py` writes, from `learner.data_op.skb` on the
+  in-memory learner (`reports_[0].estimator_` on a CV report),
+  `pipeline.svg` with `draw_graph().svg` and
   `scratch/results/01_baseline/pipeline/` with
-  `learner.report(eval=False, open=False, overwrite=True, output_dir=...)`
-  on the in-memory learner (`reports_[0].estimator_` on a CV report).
-  No `environment`. That does not fit. If `eval` is absent, write
-  `pipeline.html` from `_repr_html_` or `estimator_html_repr`.
+  `report(eval=False, open=False, overwrite=True, output_dir=...)`.
+  No `environment`. That does not fit.
 - Run `python -m skore_skills loop locator --stem 01_baseline` and
   `python -m skore_skills loop artifacts --stem 01_baseline`.
 
@@ -86,11 +86,11 @@ violated.
   The locked comparison is `MAE`.
 - Run `git commit` in this skill or `git push`.
 - Put `write_text` of `report.html`, `report.txt`, `locator.txt`,
-  or `pipeline.html`, or `learner.report(...)`, in
+  or `pipeline.svg`, or `skb.report(...)`, in
   `experiments/01_baseline.py`. Those writes belong in
   `scratch/results/01_baseline/materialize.py`.
 - Execute `experiments/01_baseline.py` or `notebook convert` it.
-- Call `learner.report` or `full_report` without `eval=False`.
+- Call `skb.report` or `full_report` without `eval=False`.
 
 ---
 

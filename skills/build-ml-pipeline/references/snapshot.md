@@ -1,17 +1,18 @@
 # Unfitted snapshot
 
 After `build_learner` exists and before `smoke run`. No fit, no
-`.skb.eval`. Do not call `full_report`. Do not call
-`learner.report` without `eval=False`.
+`.skb.eval`. Do not call `.skb.full_report`. Do not call `.skb.report`
+without `eval=False`.
 
-Confirm `DataOp.skb.report` with `python -m skore_skills api get`.
-`learner.report` forwards that call. When `eval` is a parameter,
-the experiment cell builds the
-unfitted `build_learner()` and writes the DataOp report. No
-`environment`. `results` is `scratch/results/<stem>`.
+A `SkrubLearner` wraps its DataOp in `learner.data_op`. The
+experiment cell builds the unfitted `build_learner()` and writes
+two files from `learner.data_op.skb`. No `environment`.
+`results` is `scratch/results/<stem>`.
 
 ```python
-learner.report(
+data_op = learner.data_op.skb
+(results / "pipeline.svg").write_bytes(data_op.draw_graph().svg)
+data_op.report(
     eval=False,
     open=False,
     overwrite=True,
@@ -19,32 +20,27 @@ learner.report(
 )
 ```
 
-`pipeline/index.html` is the graph. Node pages carry each step's
-source and docstring. Do not also write `pipeline.svg`. Leave
-`learner` as the last expression.
+`pipeline.svg` is the graph the site shows on the page.
+`pipeline/index.html` is the DataOp report the page links to. Its
+node pages carry each step's source and docstring. Leave `learner`
+as the last expression. Confirm `DataOp.skb.report` and
+`DataOp.skb.draw_graph` with `python -m skore_skills api get`.
 
-Graphviz is required for that call. If `dot` is null, or output
+Graphviz is required for both calls. If `dot` is null, or output
 contains `install Pydot and Graphviz` or `Format: "svg" not
-recognized`, a finished `pipeline.html` does not authorize a
-skip. Load `add-python-package` for `skrub` once. That load is
-what installs or verifies Graphviz (`env graphviz --execute`).
-Then run the report once more. Do not call `env graphviz` from
+recognized`, load `add-python-package` for `skrub` once. That load
+is what installs or verifies Graphviz (`env graphviz --execute`).
+Then run the failed call once more. Do not call `env graphviz` from
 this skill. Do not run `dot -c` or `pip install graphviz`. If
-that skill is missing, or the retry still fails, write
-`scratch/results/<stem>/pipeline.html` from `_repr_html_` or
-`sklearn.utils.estimator_html_repr`. Confirm with `api get`.
-Do not rewrite the pipeline.
-
-When `eval` is absent, skip `learner.report` and write that
-same `pipeline.html`. Do not call `full_report`.
+that skill is missing, or the retry still fails, name the error in
+one line. Do not rewrite the pipeline.
 
 Ensure `journal/<stem>.md` Method contains
 `<!-- results-embed: pipeline -->` (add the line if the note
 predates the marker). Add or update `experiments/<stem>.py`:
 markdown plus a code cell that builds the unfitted
-`build_learner()`, writes the report directory or the
-`pipeline.html` fallback, and leaves `learner` as the last
-expression. Do not add `skore.evaluate` or `project.put` here.
+`build_learner()`, writes `pipeline.svg` and the report
+directory, and leaves `learner` as the last expression. Do not add `skore.evaluate` or `project.put` here.
 Do not `notebook convert` this unfitted snapshot if the
 experiment file already contains `skore.evaluate`. That ban is
 only for this snapshot, before the first evaluation.

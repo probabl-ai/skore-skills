@@ -282,16 +282,14 @@ The script writes `report._repr_html_()` to
 the Method viewer from the in-memory learner:
 `report.estimator_` on `EstimatorReport`,
 `report.reports_[0].estimator_` on `CrossValidationReport`.
-Confirm `eval` on `DataOp.skb.report` with `api get`.
-`learner.report` forwards it. When `eval` is a parameter, call
-`learner.report` with `eval=False`, `open=False`,
-`overwrite=True`, and `output_dir` set to
-`scratch/results/<stem>/pipeline`. No `environment`. That does
-not fit. Do not call `full_report`, and do not call `report`
-without `eval=False`. If `eval` is absent, or Graphviz still
-fails after one `add-python-package` retry for `skrub`, write
-`pipeline.html` from `_repr_html_` or
-`sklearn.utils.estimator_html_repr`.
+A `SkrubLearner` wraps its DataOp in `learner.data_op`. From
+`learner.data_op.skb` the script writes `pipeline.svg` with
+`draw_graph().svg` and the DataOp report to
+`scratch/results/<stem>/pipeline/` with `report(eval=False,
+open=False, overwrite=True, output_dir=...)`. No `environment`.
+That does not fit. Do not call `full_report`, and do not call
+`report` without `eval=False`. If Graphviz still fails after one
+`add-python-package` retry for `skrub`, name the error in one line.
 
 ## End of turn
 

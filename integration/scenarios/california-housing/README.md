@@ -24,8 +24,8 @@ turn once the agent has stopped again. `baseline-approve` and
 `iterate-approve` are the design-note approval. Check after the smoke
 test. After `eda-run`, if the continuation board is still on screen,
 paste `Close. Do not add another analysis.` The `eda-run` check still
-applies. After `baseline-evaluate`, the audit continuation board is on
-screen; `baseline-close-audit` closes it and lets review write the ideas.
+applies. After `baseline-evaluate`, the result is recorded and the
+continuation board is on screen; `baseline-move-on` leaves it for triage.
 
 ## Spine
 
@@ -41,8 +41,8 @@ screen; `baseline-close-audit` closes it and lets review write the ideas.
 | `frame-open` | | Frame from `DATA.md` and the written analysis. |
 | `frame-fill` | yes | Answer the frame questions. The table locks and the baseline design note stays `planned`. |
 | `baseline-approve` | | Approve, build, and smoke-test. No report yet. |
-| `baseline-evaluate` | | Evaluate, keep the report local, and materialize the audit up to its continuation board. |
-| `baseline-close-audit` | yes | Close the audit. Review writes idea files with `Triage: open`. |
+| `baseline-evaluate` | | Evaluate, keep the report local, record the outcome, and materialize the audit. The continuation board is on screen. |
+| `baseline-move-on` | yes | Move on. Triage opens with the idea files already written. |
 | `backlog-promote` | yes | Promote the first idea to `B1`. |
 | `iterate-choose` | | Take that backlog item. `02_*` stays `planned`. No experiment file. |
 | `iterate-approve` | | Approve and smoke-test `02_*`. No second report. |

@@ -426,16 +426,22 @@ violated.
 - Name record-outcome next, after the notebook gate is `skip`,
   since no audit ran this turn, and hand it that locator.
 - Name `python -m skore_skills site build --if-stale` after record-outcome.
-- Name `python -m skore_skills git end-turn --stage evaluate`
-  last. If it returns `invoke`, name `persist-ml-git`.
+- Name the continuation question after the close — Additional
+  report view / Custom query / Custom plot / Move on — then
+  `python -m skore_skills git end-turn --stage evaluate`. If it
+  returns `invoke`, name `persist-ml-git`.
 
 **Must NOT do:**
 - Put catalog skill ids, HITL, `G-PKG-NAME` / `G-ENV-MGR` / `G-SKORE-MODE` / `G-TABULAR` / `G-CV-SPLITTER`, or `python -m skore_skills` / `env add` in user-facing questions or the close narrative (trailing `G-REPORT-LOCATOR` / `G-AUDIT-FINDING` and unmanaged `pixi add` / `uv add` / `pip install` lines are allowed).
 - Name record-outcome, `site build`, or `git end-turn` without
-  the locator (or the explicit n/a string).
+  the locator (or the explicit n/a string). Naming the locator in
+  the record-outcome step or the close's tokens block satisfies
+  this; a later `site build` line need not repeat it.
 - End the turn, or name only the audit file, while `action` is
   `convert`.
 - Name `site build` before record-outcome.
+- Ask the continuation question before record-outcome and the
+  close-time site build.
 - Write `journal/JOURNAL.md` or the design note directly.
 - Run `git commit` in this skill.
 - Convert `audit/01_baseline.py`: no audit file exists this turn.
@@ -459,13 +465,16 @@ violated.
   dispatcher.
 - Return to `model-ml-pipeline` after the evaluation.
 - State that the dispatcher owns record-outcome, the close-time
-  notebook gate, and `git end-turn`.
+  notebook gate, `git end-turn`, and the continuation question
+  after the close.
 
 **Must NOT do:**
 - Put catalog skill ids, HITL, `G-PKG-NAME` / `G-ENV-MGR` / `G-SKORE-MODE` / `G-TABULAR` / `G-CV-SPLITTER`, or `python -m skore_skills` / `env add` in user-facing questions or the close narrative (trailing `G-REPORT-LOCATOR` / `G-AUDIT-FINDING` and unmanaged `pixi add` / `uv add` / `pip install` lines are allowed).
 - Drop the locator because the dispatcher owns convert.
 - Write the User-facing close (narrative + Open these) here;
   the dispatcher owns it.
+- Ask Additional report view / Custom query / Custom plot /
+  Move on here.
 - Run `notebook convert`, the close-time `loop notebooks`, or
   `git end-turn` here.
 - Load `manage-ml-backlog` here.
@@ -611,6 +620,8 @@ violated.
   convert` those files. Do not add `<!-- results-embed: audit -->`.
 - Name audit when available, then record-outcome with that
   locator, then the close-time `site build --if-stale`, then
+  the continuation question (Additional report view / Custom
+  query / Custom plot / Move on), then
   `git end-turn --stage evaluate`. A post-materialize
   `site build --if-stale` may also run earlier so the result
   viewers are visible; it does not replace this close build.
@@ -623,10 +634,13 @@ violated.
 - End the turn, or fill only the audit file, while `action`
   is `convert`.
 - `notebook convert` `experiments/<stem>.py` because the script
-  contains `skore.evaluate`.
+  contains `skore.evaluate`. Naming the `convert` action of
+  `loop notebooks`, or `notebook fill`, is not `notebook convert`.
 - Treat the post-materialize preview as the finished close, or
   skip the close-time `site build --if-stale` after
   record-outcome.
+- Ask the continuation question before record-outcome and the
+  close-time `site build`.
 - Load triage a second time after `persist-ml-git`.
 
 ---

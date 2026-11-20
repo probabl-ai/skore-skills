@@ -71,10 +71,10 @@ checkout at `{{SKILLS_REPO}}` and supplied that checkout's
 
 - Approve the design note.
 - Evaluate and keep the report local.
-- Review the result.
-- When the audit digest is ready, close the audit. That choice is
-  already made: do not ask again, and do not add an additional
-  report view, a custom query, or a custom plot.
+- Review the result, record the outcome, and update the website.
+- When the result is presented, move on. That choice is already
+  made: do not ask again, and do not add an additional report
+  view, a custom query, or a custom plot.
 
 ## Backlog and next experiment
 

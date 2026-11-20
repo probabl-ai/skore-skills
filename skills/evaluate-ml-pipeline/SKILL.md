@@ -360,7 +360,21 @@ only on `skip`.
    not name the
    design-note markdown. When the site was not built, do not
    claim it was updated and do not name the markdown.
-6. `python -m skore_skills git end-turn --stage evaluate`. If
+6. Continuation. One **AskUserQuestion**, none preselected:
+   Additional report view / Custom query / Custom plot /
+   Move on. This is the only post-run question; the results are
+   already recorded and published. Ahead of it, 2–4 lines state
+   what the answer authorizes and the facts it rests on — the
+   checks and metrics just read, the `Displays` names in
+   `scratch/audit/<stem>/accessors.txt`. A view, query, or plot →
+   load `audit-ml-pipeline` only if
+   `status.skills.audit-ml-pipeline` is true (it appends the
+   read-only cell, re-runs `materialize.py`, and re-derives
+   G-AUDIT-FINDING), then `site build --if-stale` when
+   `policy.site` is true and re-present this question. Do not
+   record-outcome again: extra views do not change the checks or
+   metrics. Move on → step 7.
+7. `python -m skore_skills git end-turn --stage evaluate`. If
    JSON `action` is `invoke`, load `persist-ml-git` when
    installed and stop. Otherwise load `triage-ml-task` when
    installed. Do not run `git commit` here.

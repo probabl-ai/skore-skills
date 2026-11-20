@@ -191,7 +191,9 @@ and `frame show` already returned `proceed` with a non-null
 
 **Must NOT do:**
 - Put catalog skill ids, HITL, `G-PKG-NAME` / `G-ENV-MGR` / `G-SKORE-MODE` / `G-TABULAR` / `G-CV-SPLITTER`, or `python -m skore_skills` / `env add` in user-facing questions or the close narrative (trailing `G-REPORT-LOCATOR` / `G-AUDIT-FINDING` and unmanaged `pixi add` / `uv add` / `pip install` lines are allowed).
-- Ask Build the locked baseline or Discuss the next step.
+- Ask Build the locked baseline or Discuss the next step. The design
+  note's Motivation naming the next step is not asking the user to
+  discuss it.
 - Mention discuss, an EDA proposal, or the backlog.
 - Offer an EDA-derived proposal.
 - Offer Pick from the Backlog.

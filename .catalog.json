@@ -2,7 +2,7 @@
   "name": "probabl-skills",
   "repository": "probabl-ai/skore-skills",
   "description": "Skills to support Machine Learning experimentation using the Python ecosystem.",
-  "catalog_hash": "07fdeca9f069def352f0476b547200f886ca45ea7356e55375f2836b0a9cc8b2",
+  "catalog_hash": "fc7ffe84087afc38eb63615e52e5339cbe402272b04e54e5e10b3d3d981540a6",
   "skills": [
     {
       "id": "explore-ml-data",
@@ -38,7 +38,7 @@
       "summary": "Evaluate one sklearn-compatible learner with the locked validation scheme and persist structured skore reports.",
       "category": "methodology",
       "subcategory": null,
-      "hash": "742694b791cd340cd0a93a7c83800b000483ec18261d83ba42276e16cf28d468"
+      "hash": "edb8274334ec8e72af68eb5acaeea81a170412b54f02489d8963f8f65df3ca18"
     },
     {
       "id": "smoke-test-ml-pipeline",

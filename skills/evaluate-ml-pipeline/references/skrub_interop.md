@@ -158,7 +158,7 @@ project = skore.Project(
     name="load-forecast",
     mode="hub",
     workspace="<hub-workspace>",  # the Skore Hub org/team identifier
-    host="https://skore.probabl.ai",
+    host="<hub-host>",
 )
 project.put("01_baseline", report)
 ```

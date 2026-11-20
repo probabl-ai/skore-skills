@@ -42,7 +42,7 @@ project = skore.Project(
     name="<project-name>",
     mode="hub",
     workspace="<hub-workspace>",
-    host="https://skore.probabl.ai",
+    host="<hub-host>",
 )
 ```
 
@@ -76,7 +76,7 @@ Source: https://docs.skore.probabl.ai/stable/reference/api/skore.Project.html
 | `name=` argument | `name="<project-name>"` (bare) | `name="<project-name>"` (bare — the Hub project name) | `name="<experiment-name>"` (MLflow experiment name) |
 | `mode=` argument | `mode="local"` | `mode="hub"` | `mode="mlflow"` |
 | `workspace=` argument | **required**: `workspace=str(PROJECT_ROOT / "reports")` (on-disk dir) | **required**: `workspace="<hub-workspace>"` (the Hub workspace name) | **MUST be absent** — `tracking_uri=` is used instead |
-| `host=` argument | not used | **required** unless `SKORE_HUB_URI` is already that host: `host="https://skore.probabl.ai"` | not used |
+| `host=` argument | not used | **required** unless `SKORE_HUB_URI` is already that host: `host="<hub-host>"` | not used |
 | `tracking_uri=` argument | not used | not used | **required**: the MLflow tracking server URI |
 | Install command | `env add-skore --mode local --execute` | `env add-skore --mode hub --execute` | `env add-skore --mode mlflow --execute` (`mlflow>=3` required) |
 | Pre-condition | `reports/` exists (create at this gate; no README) | Skore Hub account, workspace access, and an API key for that host and workspace | reachable MLflow tracking server at `<uri>` |
@@ -279,7 +279,7 @@ project = skore.Project(
     name="load-forecast",
     mode="hub",
     workspace="acme-corp",
-    host="https://skore.probabl.ai",
+    host="<hub-host>",
 )
 ```
 

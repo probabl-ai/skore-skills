@@ -83,8 +83,21 @@ skill ids, `G-*` names, or the wrapper CLI.
    not create `reports/`. Then load `add-python-package` if
    installed; it runs `env add-skore --mode <mode> --execute`.
    Do not spell `skore[...]` here. Do not run `env add` here.
-   Constructors: `references/g_skore_mode.md`. A switch or a
-   migration loads `sync-ml-reports` when that skill is
+   Constructors: `references/g_skore_mode.md`. Hub does not call
+   `skore.login`. Write `workspace=` and `host=` in the Project
+   init. Before the materialize run, when mode is hub: a set
+   `SKORE_HUB_API_KEY`, a successful Hub `put` already in hand,
+   or a `skore hub api-key list` row for this host and workspace
+   means the key is present — do not generate and do not ask for
+   the host again. Otherwise run
+   `skore hub api-key generate --host <host> --workspace <workspace>`
+   and wait for the browser device login. Do not pass `--force`
+   unless the user asked to replace the key. Do not read
+   `~/.skore.hub/credentials.json` or `.skore`. If the host is
+   unknown and `SKORE_HUB_URI` is unset, ask, proposing
+   `https://skore.probabl.ai`. Read `host=` and `workspace=` from
+   the experiment file when they are already there. A switch or
+   a migration loads `sync-ml-reports` when that skill is
    installed.
 5. Emit Pre-flight, then 1–3 sentences: this is local
    full-dataset evaluation with the locked scheme, report
@@ -414,6 +427,8 @@ Pre-flight (evaluate-ml-pipeline):
 - [ ] frame show is proceed; DataOp cv matches translation
       (or holdout / prefit, and the marker has no cv)
 - [ ] skore_mode is set (local | hub | mlflow)
+- [ ] hub: API key present (env, list, or put already succeeded)
+      | n/a (local | mlflow)
 - [ ] evaluate consent is proceed, or the user answered Evaluate
 - [ ] Call site is experiments/NN_*.py (not executed)
 - [ ] The one run is scratch/results/<stem>/materialize.py

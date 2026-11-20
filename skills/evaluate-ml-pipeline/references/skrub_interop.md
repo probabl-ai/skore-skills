@@ -153,13 +153,12 @@ project.put("01_baseline", report)
 ```
 
 ```python
-# hub mode
-from skore import login
-login(mode="hub")  # interactive on first run; cached after
+# hub mode — no skore.login; key from `skore hub api-key generate`
 project = skore.Project(
     name="load-forecast",
     mode="hub",
     workspace="<hub-workspace>",  # the Skore Hub org/team identifier
+    host="https://skore.probabl.ai",
 )
 project.put("01_baseline", report)
 ```
@@ -182,7 +181,8 @@ project.put("01_baseline", report)   # key = MLflow run name
   different meaning each: local takes an **on-disk directory**
   (`str(PROJECT_ROOT / "reports")`, created on first `put`), hub
   takes the **Skore Hub org/team identifier** (`workspace="<hub-workspace>"`).
-  **Not** a valid kwarg in mlflow mode.
+  Hub also takes `host=` (the Hub address). **Not** a valid kwarg
+  in mlflow mode.
 - **mlflow-mode `tracking_uri=`** — the MLflow tracking server URI
   (HTTP(S) server, `sqlite:///…`, or `file:./mlruns` backend).
   mlflow-only kwarg; no `login()`. `skore[mlflow]` extra required.

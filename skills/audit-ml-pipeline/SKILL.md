@@ -195,7 +195,7 @@ reads the digest as text and does not open the Project. See
 | Register a Jupyter kernel "to be safe" | Current runner is in-process; no kernel. Registering creates an orphan kernelspec |
 | Add a fix-up cell that mutates `data/` or `reports/` | Audit files are read-only. State mutations belong in a `scratch/<ts>_*.py` probe or the experiment script |
 | Substitute `<SKORE_PROJECT_INIT>` in `audit/<stem>.py` without reading `experiments/<stem>.py` first | Audit must open the same Project. Always Read experiments/<stem>.py this turn and copy the literal Project init block byte-identical (modulo formatting) |
-| Hub mode: put `skore.login(mode="hub")` after `skore.Project(...)` | `Project(...)` constructor authenticates at init time; without prior `login`, fails. Order is fixed: login first, Project second |
+| Hub mode: insert `skore.login(...)` | `skore.login` is gone. Copy the experiment init, including `host=` and `workspace=`, and do not add a login call. A missing key is `skore hub api-key generate` for that host and workspace |
 | Implement-loop audit → write scratch probe first to "double-check metrics" | The audit IS the metric-extraction step. Scratch probes for metrics are the anti-pattern this dispatch replaces |
 | `write_text` or a `help()` loop inside `audit/<stem>.py` | The notebook is the human view. Copy `templates/materialize.py` to `scratch/audit/<stem>/materialize.py` for HTML, the locator file, and `accessors.txt` |
 
@@ -287,7 +287,7 @@ Template: `templates/audit.py`.
 |---|---|
 | `<pkg>` | The importable package name (from `src/<pkg>/`) |
 | `<NN>_<short_name>` | The experiment stem (e.g. `02_target_transform`) |
-| `<SKORE_PROJECT_INIT>` | The full Project init block (including any preceding `skore.login(...)` call for hub mode), copied **byte-identical** from `experiments/<stem>.py` |
+| `<SKORE_PROJECT_INIT>` | The full Project init block, copied **byte-identical** from `experiments/<stem>.py`. Hub includes `host=` and `workspace=`; there is no `skore.login` call |
 | `<project-name>` | The `name=` argument from `experiments/<stem>.py` (read it; don't invent) |
 | `<hub-workspace>` | Hub-mode only. Copy from the `workspace=` argument in `experiments/<stem>.py` |
 | `<REPORT_LOCATOR>` | The normalized post-put locator handed off by evaluate. If absent, derive it from the selected id and backend rules below; never guess a URL |
@@ -639,8 +639,8 @@ Quick lookup; detailed recovery steps in `references/failure_modes.md`.
 | `AttributeError` for a `report.*` accessor | Symbol from memory; skore version drift | → `references/failure_modes.md` § "AttributeError" |
 | `RuntimeError: No report under key=...` | `put()` landed in a different Project | → `references/failure_modes.md` § "wrong Project" |
 | Report differs across runs with unchanged source | Non-deterministic step / different data slice | Not a bug here; surface to user |
-| Hub mode: `skore.login()` auth error | Token expired / first-time login | → `references/failure_modes.md` § "skore.login fails" |
-| Hub mode: `TypeError: workspace` kwarg | Hub form left local-mode kwarg | → `references/failure_modes.md` § "TypeError workspace" |
+| Hub mode: `RuntimeError: No API key found` | No key for this host and workspace | → `references/failure_modes.md` § "No API key" |
+| Hub mode: `ValueError` about `host` | `host=` omitted and `SKORE_HUB_URI` unset | → `references/failure_modes.md` § "missing host" |
 | Hub mode: report missing in `summarize()` after `put()` | Wrong hub workspace OR no read access | → `references/failure_modes.md` § "report missing" |
 
 ## What this skill does NOT do

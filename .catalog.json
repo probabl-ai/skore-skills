@@ -2,7 +2,7 @@
   "name": "probabl-skills",
   "repository": "probabl-ai/skore-skills",
   "description": "Skills to support Machine Learning experimentation using the Python ecosystem.",
-  "catalog_hash": "0691d770d89b0a26f4d877f38c910fba7a0730041764e557eaa10fb22fac0f00",
+  "catalog_hash": "07fdeca9f069def352f0476b547200f886ca45ea7356e55375f2836b0a9cc8b2",
   "skills": [
     {
       "id": "explore-ml-data",
@@ -38,7 +38,7 @@
       "summary": "Evaluate one sklearn-compatible learner with the locked validation scheme and persist structured skore reports.",
       "category": "methodology",
       "subcategory": null,
-      "hash": "5df17a59f9b1ea6b8a7bfd0d9da23bcec5b0de7e3586a33e006a13da9ad18d57"
+      "hash": "742694b791cd340cd0a93a7c83800b000483ec18261d83ba42276e16cf28d468"
     },
     {
       "id": "smoke-test-ml-pipeline",
@@ -56,7 +56,7 @@
       "summary": "Audit a persisted skore report read-only and produce a reusable digest.",
       "category": "methodology",
       "subcategory": null,
-      "hash": "cfaca538a354f443f13489ae5f7045f36e96adb92ea100ebf8fdd3a671bba77d"
+      "hash": "bb0c5c8052f6a0400532eb1607869c3c5ee9c8b417847ba3f161a41d8fc55509"
     },
     {
       "id": "manage-ml-backlog",
@@ -236,7 +236,7 @@
       "summary": "Copy skore reports between local, Hub, and MLflow, and optionally switch the upload destination.",
       "category": "action",
       "subcategory": null,
-      "hash": "66ba8a564145ef82152999340c9e5f0f4eaf7aaae08f5737bddfa300898e0ff3"
+      "hash": "a9fe0f86b35917f84a9088bdd5a891cd38f00c254d221ebf112b60ed916e51da"
     }
   ],
   "workflows": [

@@ -54,10 +54,13 @@ sync table.
      (sync, leave policy and experiment files).
    - **Destination** — same three options as G-SKORE-MODE:
      `local` (disk, no account), `hub` (https://skore.probabl.ai),
-     `mlflow` (tracking server). Hub: ask the workspace name; it
-     MUST NOT contain `/`. MLflow: ask `tracking_uri`; confirm a
-     bare `host:port` as `http://host:port`. Do not default the
-     URI.
+     `mlflow` (tracking server). Hub: ask the workspace name (it
+     MUST NOT contain `/`) and the host URL. Propose
+     `https://skore.probabl.ai`. Confirm a bare host as
+     `https://<host>`. If `SKORE_HUB_URI` is already set, use
+     that host and do not re-ask. MLflow: ask `tracking_uri`;
+     confirm a bare `host:port` as `http://host:port`. Do not
+     default the URI.
    - **Project name** if `name=` is missing or disagrees across
      files.
    - **Dry-run first** vs transfer now.
@@ -71,13 +74,24 @@ sync table.
    skill is missing, name Skore for the destination and stop. Do
    not splice `pip install` / `skore[...]` here.
 
-5. If Hub is source or destination: require `SKORE_HUB_API_KEY` in
-   the environment. Missing → name it and stop. Do not open a
-   browser login. Do not read `.skore` for the key.
+5. If Hub is source or destination, a key must exist before
+   `skore sync`. `SKORE_HUB_API_KEY`, when set, is enough and
+   wins over the registry; do not generate. Otherwise run
+   `skore hub api-key list`. A row for this host and workspace
+   is enough. If that row is missing, run:
 
-6. Build `skore sync`. If `skore` is not on PATH, name
-   `skore-cli` and stop. Do not call `skore.Project.sync` in
-   Python.
+   ```bash
+   skore hub api-key generate --host <host> --workspace <workspace>
+   ```
+
+   `generate` opens a browser device login and stores the key.
+   Wait for it. Do not pass `--force` unless the user asked to
+   replace a key. Do not call `skore.login`. Do not read
+   `~/.skore.hub/credentials.json` or `.skore` for the secret.
+
+6. Build `skore sync`. If `skore` is not on PATH, name the
+   `skore` console script from the skore package and stop. Do
+   not call `skore.Project.sync` in Python.
 
    ```bash
    skore sync <project> --from=<source_mode> --to=<dest_mode>
@@ -92,8 +106,9 @@ sync table.
    | mlflow | `--tracking-uri=...`; never `*-workspace` |
 
    `--to-project` only if the destination name differs.
-   `--hub-url` only when `SKORE_HUB_URI` (or the user) names a
-   non-default Hub. `--both` only if the user asked to copy
+   `--host <host>` when a Hub endpoint is involved, unless
+   `SKORE_HUB_URI` is already that host. There is no built-in
+   default host. `--both` only if the user asked to copy
    missing reports both ways. Otherwise one-way.
 
    If the user picked dry-run first, run with `--dry-run`, show
@@ -107,9 +122,31 @@ sync table.
 7. **Switch intent only**, after a successful (or empty) sync:
    `python -m skore_skills policy set skore_mode <dest>`.
    Rewrite every Project init in `experiments/` and `audit/` to
-   the destination form in
-   `evaluate-ml-pipeline/references/g_skore_mode.md` (audit must
-   match the paired experiment, byte-for-byte modulo formatting).
+   the destination form below (audit must match the paired
+   experiment, byte-for-byte modulo formatting). Full variants:
+   `evaluate-ml-pipeline/references/g_skore_mode.md`.
+
+   ```python
+   # local
+   skore.Project(
+       name="<project-name>",
+       mode="local",
+       workspace=str(PROJECT_ROOT / "reports"),
+   )
+   # hub — no skore.login
+   skore.Project(
+       name="<project-name>",
+       mode="hub",
+       workspace="<hub-workspace>",
+       host="<hub-host>",
+   )
+   # mlflow
+   skore.Project(
+       name="<experiment-name>",
+       mode="mlflow",
+       tracking_uri="<mlflow-tracking-uri>",
+   )
+   ```
    If dest is **local**, `mkdir reports` (`exist_ok`); no README.
    If **hub** or **mlflow**, do not create `reports/`.
    If `journal/JOURNAL.md` exists, insert a `---` under History

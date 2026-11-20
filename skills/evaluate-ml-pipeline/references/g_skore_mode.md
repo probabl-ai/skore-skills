@@ -35,15 +35,14 @@ project = skore.Project(
 
 ```python
 import skore
-from skore import login
 
-# Interactive on first run (browser or API key); cached after.
-login(mode="hub")
-
+# Auth is an API key, not skore.login. Mint it once with
+# `skore hub api-key generate --host <host> --workspace <workspace>`.
 project = skore.Project(
     name="<project-name>",
     mode="hub",
     workspace="<hub-workspace>",
+    host="<hub-host>",
 )
 ```
 
@@ -72,14 +71,15 @@ Source: https://docs.skore.probabl.ai/stable/reference/api/skore.Project.html
 
 | Concern | Local | Hub | MLflow |
 |---|---|---|---|
-| `import` line for `login` | not needed | `from skore import login` | not needed |
-| `login(mode="hub")` call | not needed | **required, before `Project(...)`** | not needed |
+| `skore.login` | not used | **gone** — do not call it | not used |
+| API key | not used | `SKORE_HUB_API_KEY`, else the key from `skore hub api-key generate --host <host> --workspace <workspace>` | not used |
 | `name=` argument | `name="<project-name>"` (bare) | `name="<project-name>"` (bare — the Hub project name) | `name="<experiment-name>"` (MLflow experiment name) |
 | `mode=` argument | `mode="local"` | `mode="hub"` | `mode="mlflow"` |
 | `workspace=` argument | **required**: `workspace=str(PROJECT_ROOT / "reports")` (on-disk dir) | **required**: `workspace="<hub-workspace>"` (the Hub workspace name) | **MUST be absent** — `tracking_uri=` is used instead |
+| `host=` argument | not used | **required** unless `SKORE_HUB_URI` is already that host: `host="<hub-host>"` | not used |
 | `tracking_uri=` argument | not used | not used | **required**: the MLflow tracking server URI |
 | Install command | `env add-skore --mode local --execute` | `env add-skore --mode hub --execute` | `env add-skore --mode mlflow --execute` (`mlflow>=3` required) |
-| Pre-condition | `reports/` exists (create at this gate; no README) | Skore Hub account + access to `<hub-workspace>` | reachable MLflow tracking server at `<uri>` |
+| Pre-condition | `reports/` exists (create at this gate; no README) | Skore Hub account, workspace access, and an API key for that host and workspace | reachable MLflow tracking server at `<uri>` |
 
 ## The gate — AskUserQuestion shape
 
@@ -87,10 +87,11 @@ Fires at first evaluation, before `skore.evaluate`. Never silent,
 and **always presents all three options** (`local` / `hub` /
 `mlflow`) as selectable choices — even if the user has used skore
 in `local` mode in prior projects, **and even if the current folder
-already contains skore-hub configuration** (`config.toml`, `SKH__*`
-env vars, a cached hub login). Detected hub config is *detection,
-not a decision*: it MAY set the highlighted default, but it MUST
-NOT remove `mlflow` or `local` from the list.
+already contains skore-hub configuration** (`SKORE_HUB_URI`,
+`SKORE_HUB_API_KEY`, or a row from `skore hub api-key list`).
+Detected hub config is *detection, not a decision*: it MAY set
+the highlighted default, but it MUST NOT remove `mlflow` or
+`local` from the list.
 
 ### Structured pick with default and follow-up
 
@@ -107,13 +108,11 @@ NOT remove `mlflow` or `local` from the list.
 
    Default proposal: `local`.
 
-2. **Hub workspace name** (only when mode is `hub`). Free-form
-   string — the org/team identifier on Skore Hub. The agent cannot
-   infer this from the local environment; the user must know it
-   (it's the workspace they've been granted access to). If the
-   user picks `hub` without knowing the workspace name, surface
-   that they need to create or join one at
-   https://skore.probabl.ai first.
+2. **Hub workspace name and host** (only when mode is `hub`).
+   The workspace is a free-form org/team identifier. The agent
+   cannot infer it; the user must know it. If the user picks
+   `hub` without a workspace name, surface that they need to
+   create or join one at https://skore.probabl.ai first.
 
    **Validation**: the workspace name MUST NOT contain `/`. The
    `workspace=` value is a single Hub workspace identifier passed as
@@ -123,6 +122,22 @@ NOT remove `mlflow` or `local` from the list.
    intended workspace and `datasci` is part of the project name. Do
    not silently accept slashes — that produces an invalid workspace
    identifier at runtime.
+
+   The host is the Hub address passed as `host=` (for example
+   `https://skore.probabl.ai`). Propose that URL. Confirm a bare
+   host as `https://<host>`. If `SKORE_HUB_URI` is already set,
+   use it and do not re-ask. There is no built-in default: omitting
+   `host=` with `SKORE_HUB_URI` unset raises `ValueError`.
+
+   **API key**, before any Hub `Project(...)`. Do not call
+   `skore.login`. `SKORE_HUB_API_KEY`, when set, wins and is
+   enough; it is bound to one workspace. Otherwise run
+   `skore hub api-key list`. A row for this host and workspace
+   is enough. If that row is missing, run
+   `skore hub api-key generate --host <host> --workspace <workspace>`
+   and wait for the browser device login. Do not pass `--force`
+   unless the user asked to replace a key. Do not read
+   `~/.skore.hub/credentials.json` or `.skore` for the secret.
 
 3. **MLflow tracking URI** (only when mode is `mlflow`). Free-form
    string — the `tracking_uri=` passed to `skore.Project(...)`.
@@ -160,7 +175,7 @@ artifacts:
 
 | Downstream artifact | local-mode shape | hub-mode shape | mlflow-mode shape |
 |---|---|---|---|
-| `<SKORE_PROJECT_INIT>` in `experiments/NN_*.py` and `audit/NN_*.py` | `skore.Project(name="<project-name>", mode="local", workspace=str(PROJECT_ROOT / "reports"))` | `from skore import login; login(mode="hub"); skore.Project(name="<project-name>", mode="hub", workspace="<hub-workspace>")` | `skore.Project(name="<experiment-name>", mode="mlflow", tracking_uri="<mlflow-tracking-uri>")` |
+| `<SKORE_PROJECT_INIT>` in `experiments/NN_*.py` and `audit/NN_*.py` | `skore.Project(name="<project-name>", mode="local", workspace=str(PROJECT_ROOT / "reports"))` | `skore.Project(name="<project-name>", mode="hub", workspace="<hub-workspace>", host="<hub-host>")` | `skore.Project(name="<experiment-name>", mode="mlflow", tracking_uri="<mlflow-tracking-uri>")` |
 | Skore install (via `add-python-package`) | `env add-skore --mode local --execute` | `env add-skore --mode hub --execute` | `env add-skore --mode mlflow --execute` (the `mlflow>=3` pin is encoded) |
 | `policy.skore_mode` (`.skore`) | `local` | `hub` | `mlflow` |
 
@@ -168,10 +183,11 @@ artifacts:
 directly, hub uses it as the Hub project name, mlflow uses it as the
 MLflow experiment name. What changes is the **companion kwarg**:
 `workspace=` is required by local (an on-disk directory `Path`) and by
-hub (the Hub workspace identifier `str`), while mlflow takes
+hub (the Hub workspace identifier `str`). Hub also takes `host=`
+unless `SKORE_HUB_URI` is already that host. MLflow takes
 `tracking_uri=` instead and rejects `workspace=`. These are not "swap
 one word" differences; the substitution marker exists precisely
-because the companion kwarg changes.
+because the companion kwargs change.
 
 ## Persistence
 
@@ -180,7 +196,7 @@ skore_mode <local | hub | mlflow>`. If **local**, create
 `reports/` if missing (`mkdir`, exist_ok) and do not write a
 README. If **hub** or **mlflow**, do not create `reports/` —
 that directory is the on-disk Project store only. Hub workspace
-names and MLflow tracking URIs live in the experiment's
+names, Hub hosts, and MLflow tracking URIs live in the experiment's
 `<SKORE_PROJECT_INIT>` block, not in JOURNAL. On later sessions,
 read `status.policy.skore_mode` and skip re-asking.
 
@@ -255,17 +271,15 @@ project = skore.Project(
 ### After substitution — hub mode
 
 The whole block (including the `# %%` cell marker) is rewritten to
-include the `login` call AND the new `Project` shape:
+the Hub `Project` shape. There is no `login` call:
 
 ```python
 # %%
-from skore import login
-
-login(mode="hub")
 project = skore.Project(
     name="load-forecast",
     mode="hub",
     workspace="acme-corp",
+    host="<hub-host>",
 )
 ```
 
@@ -273,9 +287,11 @@ Note that in the hub form:
 
 - `workspace=` is **kept**, but carries the **Hub workspace name**
   (`"acme-corp"`), not an on-disk directory.
+- `host=` is the Hub address. Write it in the file so a later run
+  does not depend on `SKORE_HUB_URI` in the shell.
 - `name=` stays the bare project name (no slash join).
-- `login(...)` precedes `Project(...)` in the same cell so a
-  single execution does both.
+- Do not call `skore.login`. The key comes from
+  `skore hub api-key generate` or `SKORE_HUB_API_KEY`.
 
 ### After substitution — mlflow mode
 

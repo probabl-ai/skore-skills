@@ -65,29 +65,29 @@ Most often: the experiment was re-run with a different data slice,
 or a non-deterministic step (RNG seed) shifted. Not a bug in this
 skill; surface to the user before assuming the audit changed.
 
-## Hub mode: `skore.login(mode="hub")` fails with an authentication error
+## Hub mode: `RuntimeError: No API key found for this workspace`
 
-Token expired or the user hasn't logged in on this machine yet.
-Surface the failure verbatim; do not retry from a `scratch/`
-probe — `login` is interactive (browser or API key prompt) and
-belongs in the audit file's own execution. Re-run the runner after
-the user has refreshed credentials.
+No key for this host and workspace, and `SKORE_HUB_API_KEY` is
+unset. Surface the error. Run
+`skore hub api-key generate --host <host> --workspace <workspace>`
+with the host and workspace already in `experiments/<stem>.py`.
+Do not insert `skore.login`. Do not read
+`~/.skore.hub/credentials.json` or `.skore`. Re-run the audit
+runner after the key is stored.
 
-## Hub mode: `TypeError: Project.__init__() got an unexpected keyword argument 'workspace'`
+## Hub mode: `ValueError` — host missing
 
-The `<SKORE_PROJECT_INIT>` substitution dropped the hub form but
-left a `workspace=` kwarg in the call. `workspace=` is local-mode-
-only — hub mode rejects it. Re-check the audit file's Project init
-block against the experiment script's (they must match), or
-re-substitute the marker from a clean template.
+`Project(...)` was opened without `host=` and `SKORE_HUB_URI` is
+unset. Copy `host=` and `workspace=` from `experiments/<stem>.py`.
+Hub requires both. Do not drop `workspace=` to "fix" the call.
 
 ## Hub mode: report appears missing in `summarize()` but the experiment script reported a successful `put()`
 
 Two possibilities:
 
-1. **Different hub workspace.** The audit is opening a different hub
-   workspace than the experiment wrote to. Verify the
-   `<hub-workspace>` part of the name matches `experiments/<stem>.py`.
+1. **Different hub workspace or host.** The audit is opening a
+   different hub workspace or host than the experiment wrote to.
+   Verify `workspace=` and `host=` match `experiments/<stem>.py`.
 2. **No read access.** The user's credentials don't have read access
    to the workspace they wrote to (rare). Surface the access issue
    to the user; do not silently fall back to local mode.

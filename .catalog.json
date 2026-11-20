@@ -2,7 +2,7 @@
   "name": "probabl-skills",
   "repository": "probabl-ai/skore-skills",
   "description": "Skills to support Machine Learning experimentation using the Python ecosystem.",
-  "catalog_hash": "9e9ddf99e284d1509af1bc0f543454b3be32a36007095af15083959f84080b90",
+  "catalog_hash": "592273214150392c1cd11ba2d47449aab57c9fcfde720a8ff9d77099277b4cb7",
   "skills": [
     {
       "id": "explore-ml-data",
@@ -74,7 +74,7 @@
       "summary": "Session owner: list installed entry skills and ask which to run.",
       "category": "meta",
       "subcategory": null,
-      "hash": "b02deb0a99745ed69c12e1bcd6575385e57755c1293a090d7ebd903c930e22e0"
+      "hash": "939eb9eefb0dff8b1a272c02c0daa83ac5bc3e9261208f427202e2515e427ad0"
     },
     {
       "id": "review-ml-choices",

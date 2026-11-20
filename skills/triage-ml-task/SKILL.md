@@ -117,41 +117,25 @@ context.
    is true).
 
 3. **Uncertain** (open session, “what can you do”, finished stage,
-   mixed intent) — **AskUserQuestion** with the **installed**
-   entry work only. One pick, then load the mapped skill.
+   mixed intent) — run `python -m skore_skills triage choices`.
+   Its `choices` array is the board: installed entry work only.
+   **AskUserQuestion** with exactly those rows, in order, each
+   row's `label` as the option and its `skill` as the load target.
+   Do not rebuild the board from memory, add a row, or offer a
+   `not_offered` row. One pick, then load that row's `skill` and
+   stop.
 
-   Offer a label only if `status.skills.<id>` is true. User-visible
-   labels (no ids):
+   When `recommended` is set, say its `recommendation_reason` and
+   recommend that row first. Do not auto-load it. When `choices`
+   is empty, say in one line that no entry skill is installed (or
+   that the install status is unknown) and do not invent a menu.
 
-   - Set up the project → `setup-ml-project`
-   - Explore the data → `explore-ml-data`
-   - Build a model → `model-ml-pipeline`
-   - Review the last experiment → `review-ml-experiment`
-   - Record / decide what next → `manage-ml-backlog`
-   - Export → `export-ml-project`
-   - Sync reports → `sync-ml-reports`
-   - Review choices → `review-ml-choices`
-
-   If none of those ids are true, say so in one line; do not
-   invent a menu.
-
-   Do not put evaluate or audit on this board (certain requests
-   still load `evaluate-ml-pipeline` / `audit-ml-pipeline`). Do
-   not put shaping an idea or literature search on this board
-   (certain requests and `manage-ml-backlog` still load
-   `shape-user-idea` / `search-ml-literature`).
-
-   If `status.data_analysis` is `missing` and
-   `status.skills.explore-ml-data` is true, recommend exploring
-   the data first. Do not auto-load it. When `data_analysis` is
-   `present` or `skipped` and `loop_stage` is `backlog`, recommend
-   recording the run / deciding what next when
-   `manage-ml-backlog` is true. Do not auto-load it.
-
-   Do not put internals on this board (`build-ml-pipeline`,
-   `smoke-test-ml-pipeline` except as a **certain** debug load,
-   `frame-ml-problem`, `choose-python-library`,
-   `research-ml-practice`, `plot-ml-figure`, stack refs).
+   The board never includes evaluate, audit, shaping an idea,
+   literature search, or internals (`build-ml-pipeline`,
+   `smoke-test-ml-pipeline`, `frame-ml-problem`,
+   `choose-python-library`, `research-ml-practice`,
+   `plot-ml-figure`, stack refs). Certain requests still load
+   those.
 
 ## Stop conditions
 
@@ -166,6 +150,8 @@ context.
 - Do not invent a missing skill's steps from memory.
 - Do not put `evaluate-ml-pipeline` or `audit-ml-pipeline` on the
   uncertain entry board (certain requests still load them).
+- Do not offer an entry row that `triage choices` left out of
+  `choices`, and do not rebuild the board by hand.
 - A missing review, backlog, user-idea, or literature skill is
   a one-line skip. Do not invent that skill's procedure.
 - Do not put `shape-user-idea` or `search-ml-literature` on the

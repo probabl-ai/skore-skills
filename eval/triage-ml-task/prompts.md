@@ -17,12 +17,12 @@
 
 **Must do:**
 - Run `python -m skore_skills status`.
-- AskUserQuestion with human labels for installed entry work
-  (Set up the project, Explore the data, Build a model, Review
-  the last experiment, Record / decide what next, Export, Sync
-  reports, Review choices if installed). One pick. Do not put
-  skill ids on the labels.
-- Recommend exploring the data first; do not auto-load it.
+- Use the `triage choices` JSON. Do not rebuild which rows are
+  offered.
+- AskUserQuestion with the eight installed entry rows, human
+  labels only. One pick. Do not put skill ids on the labels.
+- Recommend exploring the data first, using
+  `recommendation_reason`; do not auto-load it.
 - Do not treat the missing `.skore` as an empty project despite
   the existing scaffold.
 
@@ -415,11 +415,13 @@
 
 **Must do:**
 - Run `python -m skore_skills status`.
-- AskUserQuestion with human labels for installed entry work,
-  including Record / decide what next and Review the last
-  experiment. One pick.
-- Recommend recording the run / deciding what next. Do not
-  auto-load it.
+- Use the `triage choices` JSON. Do not rebuild which rows are
+  offered.
+- AskUserQuestion with the installed entry rows, including
+  Record / decide what next and Review the last experiment. One
+  pick.
+- Recommend recording the run / deciding what next, using
+  `recommendation_reason`. Do not auto-load it.
 
 **Must NOT do:**
 - Put catalog skill ids, HITL, `G-PKG-NAME` / `G-ENV-MGR` / `G-SKORE-MODE` / `G-TABULAR` / `G-CV-SPLITTER`, or `python -m skore_skills` / `env add` in user-facing questions or the close narrative (trailing `G-REPORT-LOCATOR` / `G-AUDIT-FINDING` and unmanaged `pixi add` / `uv add` / `pip install` lines are allowed).
@@ -441,6 +443,8 @@
 - The other usual entry skills are `true`.
 
 **Must do:**
+- Use the `triage choices` JSON. Do not rebuild which rows are
+  offered.
 - Say in one line that `manage-ml-backlog` is not installed.
 - Offer the other installed entry points, each with a short
   description.
@@ -565,3 +569,36 @@
 - Load `explore-ml-data` before setup returns.
 - Start exploratory data analysis methodology.
 - Ask which entry skill to run.
+
+---
+
+## CASE_25 — Loop pack leaves the setup row off the board
+
+**User prompt:**
+> What can you help me with on this machine learning project?
+
+**Assumed workspace state:**
+- `status.setup.pending` is empty.
+- Existing scaffold with no specific task requested.
+- `status.data_analysis` is `missing`.
+- The `loop` workflow pack is installed: `triage choices` returns
+  `choices` for Explore the data, Build a model, Review the last
+  experiment, Record / decide what next, Export, Sync reports,
+  and Review choices.
+- `status.skills.setup-ml-project` is `false`; `not_offered`
+  carries that row as "setup-ml-project not installed".
+
+**Must do:**
+- Run `python -m skore_skills status`.
+- Use the `triage choices` JSON. Do not rebuild which rows are
+  offered.
+- AskUserQuestion with exactly the seven installed entry rows.
+  One pick. Do not put skill ids on the labels.
+- Recommend exploring the data first, using
+  `recommendation_reason`; do not auto-load it.
+
+**Must NOT do:**
+- Put catalog skill ids, HITL, `G-PKG-NAME` / `G-ENV-MGR` / `G-SKORE-MODE` / `G-TABULAR` / `G-CV-SPLITTER`, or `python -m skore_skills` / `env add` in user-facing questions or the close narrative (trailing `G-REPORT-LOCATOR` / `G-AUDIT-FINDING` and unmanaged `pixi add` / `uv add` / `pip install` lines are allowed).
+- Offer "Set up the project" or load `setup-ml-project`.
+- Load a skill the board left out.
+- Auto-load a stage skill without asking.

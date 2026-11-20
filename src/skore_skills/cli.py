@@ -243,6 +243,22 @@ def status_cmd(fmt: str) -> None:
     click.echo(render_status(Path.cwd(), fmt.lower()), nl=False)
 
 
+@cli.group("triage")
+def triage_group() -> None:
+    """Inspect the deterministic triage entry board."""
+
+
+@triage_group.command("choices")
+def triage_choices_cmd() -> None:
+    """Print the installed entry board as JSON."""
+    from skore_skills.triage_choices import render_triage_choices
+
+    try:
+        click.echo(render_triage_choices(Path.cwd()), nl=False)
+    except ValueError as exc:
+        raise click.UsageError(str(exc)) from exc
+
+
 @cli.group("model")
 def model_group() -> None:
     """Inspect deterministic model-workflow choices."""

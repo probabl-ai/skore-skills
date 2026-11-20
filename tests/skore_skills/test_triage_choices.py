@@ -120,7 +120,10 @@ def test_backlog_stage_recommends_the_backlog(
     _isolate_home(tmp_path, monkeypatch)
     _install(tmp_path, *_ENTRY)
     _write(tmp_path / "data_analysis" / "data_analysis.md", "# report\n")
-    _write(tmp_path / ".skore", json.dumps({"workspace": {"loop": {"stage": "backlog"}}}))
+    _write(
+        tmp_path / ".skore",
+        json.dumps({"workspace": {"loop": {"stage": "backlog"}}}),
+    )
 
     payload = triage_choices(tmp_path)
 
@@ -135,7 +138,10 @@ def test_missing_backlog_skill_keeps_the_other_entries(
     _isolate_home(tmp_path, monkeypatch)
     _install(tmp_path, *[name for name in _ENTRY if name != "manage-ml-backlog"])
     _write(tmp_path / "data_analysis" / "data_analysis.md", "# report\n")
-    _write(tmp_path / ".skore", json.dumps({"workspace": {"loop": {"stage": "backlog"}}}))
+    _write(
+        tmp_path / ".skore",
+        json.dumps({"workspace": {"loop": {"stage": "backlog"}}}),
+    )
 
     payload = triage_choices(tmp_path)
 

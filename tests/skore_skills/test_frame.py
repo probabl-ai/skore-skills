@@ -109,10 +109,6 @@ def test_blank_journal_asks_every_missing_decision(tmp_path: Path) -> None:
     assert payload["missing"] == [
         "prediction_goal",
         "deployment",
-        "horizon",
-        "gap",
-        "time_role",
-        "generalize_to",
         "known_at_predict",
         "metric_role",
         "metric",
@@ -120,11 +116,12 @@ def test_blank_journal_asks_every_missing_decision(tmp_path: Path) -> None:
         "baseline_note",
         "folds",
     ]
+    assert "fill_na" not in payload
     goal = _question(payload, "prediction_goal")
     assert goal["candidates"] == ["probabilities", "point_labels", "uncovered"]
     assert goal["reference"] == "references/prediction-goal.md"
-    assert _question(payload, "horizon")["reference"] == "references/horizon-gap.md"
-    assert "candidates" not in _question(payload, "horizon")
+    for key in ("horizon", "gap", "time_role", "generalize_to"):
+        assert key not in payload["missing"]
     assert _question(payload, "baseline")["candidates"] == [
         "seasonal_naive",
         "group_mean",
@@ -147,11 +144,13 @@ def test_time_deployment_asks_the_remaining_cells(tmp_path: Path) -> None:
     payload = frame_show(tmp_path)
 
     assert "generalize_to" not in payload["missing"]
+    assert payload["fill_na"] == ["generalize_to"]
     assert "horizon" in payload["missing"]
     assert "folds" in payload["missing"]
     horizon = _question(payload, "horizon")
     assert horizon["reference"] == "references/horizon-gap.md"
     assert "candidates" not in horizon
+    assert _question(payload, "time_role")["reference"] == "references/time-role.md"
 
 
 def test_complete_draft_asks_to_set(tmp_path: Path) -> None:
@@ -386,6 +385,143 @@ def test_group_mean_on_the_generalize_to_column_does_not_lock(tmp_path: Path) ->
     assert payload["reason"] == "group_mean_on_generalize_to"
     assert "seasonal_naive" not in payload["candidates"]
     assert "group_mean" in payload["candidates"]
+
+
+def test_iid_deployment_fills_time_and_group_cells(tmp_path: Path) -> None:
+    """Independent rows do not ask horizon, gap, time role, or generalize-to."""
+    _journal(
+        tmp_path,
+        **_locked_iid(
+            Horizon="",
+            Gap="",
+            **{"Time role": "", "Generalize to": ""},
+        ),
+    )
+
+    payload = frame_show(tmp_path)
+
+    assert payload["action"] == "ask"
+    assert payload["reason"] == "fill_na"
+    assert payload["fill_na"] == ["horizon", "gap", "time_role", "generalize_to"]
+    assert "missing" not in payload
+    assert "questions" not in payload
+
+
+def test_iid_time_role_answer_is_replaced_not_asked(tmp_path: Path) -> None:
+    """A volunteered time role on an i.i.d. deployment is n/a, not a question."""
+    from skore_skills.frame import _raw_rows, frame_fill
+
+    _journal(tmp_path, **_locked_iid(**{"Time role": "covariate"}))
+    before = (tmp_path / "journal" / "JOURNAL.md").read_text(encoding="utf-8")
+
+    payload = frame_show(tmp_path)
+
+    assert payload["reason"] == "fill_na"
+    assert payload["fill_na"] == ["time_role"]
+    assert "questions" not in payload
+    assert payload["action"] != "proceed"
+
+    filled = frame_fill(tmp_path)
+
+    assert filled == {"action": "filled", "filled": ["time_role"]}
+    assert _raw_rows(tmp_path)["time_role"] == "n/a"
+    assert _raw_rows(tmp_path)["status"] == "locked"
+    assert "Revised on | n/a" in before
+    text = (tmp_path / "journal" / "JOURNAL.md").read_text(encoding="utf-8")
+    assert "| Revised on | n/a |" in text
+    assert frame_show(tmp_path)["action"] == "proceed"
+    assert frame_fill(tmp_path) == {"action": "unchanged", "filled": []}
+
+
+def test_groups_deployment_asks_generalize_to_and_fills_time(
+    tmp_path: Path,
+) -> None:
+    """Group deployment asks the id column and fills the time cells."""
+    _journal(
+        tmp_path,
+        **_locked_iid(
+            Status="draft",
+            Deployment="groups",
+            Horizon="",
+            Gap="",
+            **{"Time role": "", "Generalize to": ""},
+        ),
+    )
+
+    payload = frame_show(tmp_path)
+
+    assert payload["missing"] == ["generalize_to"]
+    assert payload["fill_na"] == ["horizon", "gap", "time_role"]
+    assert "candidates" not in _question(payload, "generalize_to")
+
+
+def test_frame_fill_on_time_writes_only_generalize_to(tmp_path: Path) -> None:
+    """A time deployment keeps horizon and gap and clears generalize-to."""
+    from skore_skills.frame import _raw_rows, frame_fill
+
+    _journal(
+        tmp_path,
+        **{
+            "Status": "draft",
+            "Revised on": "2026-09-25",
+            "Prediction goal": "point_predictions",
+            "Deployment": "time",
+            "Horizon": "1 hour",
+            "Generalize to": "store_id",
+        },
+    )
+
+    payload = frame_fill(tmp_path)
+    rows = _raw_rows(tmp_path)
+
+    assert payload["filled"] == ["generalize_to"]
+    assert rows["generalize_to"] == "n/a"
+    assert rows["horizon"] == "1 hour"
+    assert rows["gap"] == ""
+    assert rows["status"] == "draft"
+    assert rows["revised_on"] == "2026-09-25"
+
+
+def test_frame_fill_before_deployment_changes_nothing(tmp_path: Path) -> None:
+    """An unknown deployment has no n/a cells to write."""
+    from skore_skills.frame import frame_fill
+
+    _journal(tmp_path)
+    before = (tmp_path / "journal" / "JOURNAL.md").read_text(encoding="utf-8")
+
+    assert frame_fill(tmp_path) == {"action": "unchanged", "filled": []}
+    assert (tmp_path / "journal" / "JOURNAL.md").read_text(encoding="utf-8") == before
+
+
+def test_frame_fill_rejects_a_missing_row(tmp_path: Path) -> None:
+    """Filling fails when the table has no row for that cell, and does not write."""
+    from skore_skills.frame import frame_fill
+
+    path = tmp_path / "journal" / "JOURNAL.md"
+    _write(
+        path,
+        "\n".join(
+            [
+                "# JOURNAL",
+                "",
+                "## Modeling decisions",
+                "",
+                "| Variable | Value |",
+                "|---|---|",
+                "| Deployment | iid |",
+                "| Horizon | 7 day |",
+                "",
+                "## History",
+                "",
+            ]
+        ),
+    )
+    before = path.read_text(encoding="utf-8")
+
+    with pytest.raises(ValueError, match="missing gap, time_role, generalize_to"):
+        frame_fill(tmp_path)
+
+    assert path.read_text(encoding="utf-8") == before
 
 
 def test_iid_rejects_a_seasonal_baseline(tmp_path: Path) -> None:
@@ -904,3 +1040,31 @@ def test_frame_clear_cli_rejects_unknown_and_empty(
     assert (tmp_path / "journal" / "JOURNAL.md").read_text(encoding="utf-8") == before
     bare = CliRunner().invoke(cli, ["frame", "clear"])
     assert bare.exit_code != 0
+
+
+def test_frame_fill_cli_writes_na_and_rejects_a_missing_journal(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The fill command prints JSON, and a missing journal is a usage error."""
+    monkeypatch.chdir(tmp_path)
+    missing = CliRunner().invoke(cli, ["frame", "fill"])
+    assert missing.exit_code != 0
+    assert "journal is missing" in missing.output
+
+    _journal(
+        tmp_path,
+        **_locked_iid(
+            Status="draft",
+            Horizon="",
+            Gap="",
+            **{"Time role": "covariate", "Generalize to": "store_id"},
+        ),
+    )
+    filled = CliRunner().invoke(cli, ["frame", "fill"])
+    assert filled.exit_code == 0, filled.output
+    payload = json.loads(filled.output)
+    assert payload["action"] == "filled"
+    assert payload["filled"] == ["horizon", "gap", "time_role", "generalize_to"]
+    shown = json.loads(CliRunner().invoke(cli, ["frame", "show"]).output)
+    assert shown["reason"] == "set"
+    assert "fill_na" not in shown

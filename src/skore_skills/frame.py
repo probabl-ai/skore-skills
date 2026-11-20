@@ -39,7 +39,7 @@ _REFERENCES = {
     "deployment": "references/deployment.md",
     "horizon": "references/horizon-gap.md",
     "gap": "references/horizon-gap.md",
-    "time_role": "references/deployment.md",
+    "time_role": "references/time-role.md",
     "generalize_to": "references/generalize-to.md",
     "known_at_predict": "references/generalize-to.md",
     "metric_role": "references/metric-role.md",
@@ -67,6 +67,8 @@ _SUPPORTED_TASKS = frozenset(
     {"", "classification", "regression", "multioutput-regression"}
 )
 _REVISE = ["modify", "keep", "stop"]
+_TIME_KEYS = ("horizon", "gap", "time_role")
+_GROUP_KEYS = ("generalize_to",)
 
 
 def _cells(line: str) -> list[str]:
@@ -285,28 +287,6 @@ def _valid(root: Path, key: str, rows: dict[str, str]) -> bool:
     return value in allowed
 
 
-def _ask_keys(rows: dict[str, str]) -> list[str]:
-    if rows["prediction_goal"] == "uncovered":
-        return ["prediction_goal", "metric", "baseline_note"]
-    deployment = rows["deployment"]
-    keys = ["prediction_goal", "deployment"]
-    if deployment in {"", "time"}:
-        keys.extend(["horizon", "gap", "time_role"])
-    if deployment in {"", "groups"}:
-        keys.append("generalize_to")
-    keys.extend(
-        [
-            "known_at_predict",
-            "metric_role",
-            "metric",
-            "baseline",
-            "baseline_note",
-            "folds",
-        ]
-    )
-    return keys
-
-
 def _required(rows: dict[str, str]) -> list[str]:
     if rows["prediction_goal"] == "uncovered":
         return ["prediction_goal", "metric", "baseline_note"]
@@ -327,6 +307,24 @@ def _required(rows: dict[str, str]) -> list[str]:
         ]
     )
     return keys
+
+
+def _na_keys(deployment: str) -> tuple[str, ...]:
+    """Return cells this deployment records as ``n/a``."""
+    if deployment == "iid":
+        return (*_TIME_KEYS, *_GROUP_KEYS)
+    if deployment == "time":
+        return _GROUP_KEYS
+    if deployment == "groups":
+        return _TIME_KEYS
+    return ()
+
+
+def _fill_na_keys(rows: dict[str, str]) -> list[str]:
+    """Return unused deployment cells that are not yet ``n/a``."""
+    if rows["prediction_goal"] == "uncovered":
+        return []
+    return [key for key in _na_keys(rows["deployment"]) if rows[key] != "n/a"]
 
 
 def _effective(rows: dict[str, str]) -> dict[str, str]:
@@ -456,12 +454,12 @@ def frame_show(root: Path, *, revise: bool = False) -> dict[str, Any]:
         return payload
 
     locked = rows["status"].split()[:1] == ["locked"]
-    complete = all(_valid(root, key, rows) for key in _required(rows))
-    if revise and locked and complete and not _conflict(rows):
+    fill = _fill_na_keys(rows)
+    pending = [key for key in _required(rows) if not _valid(root, key, rows)]
+    if revise and locked and not pending and not fill and not _conflict(rows):
         return _ask("revise", rows, choices=list(_REVISE), full=True)
 
-    pending = [key for key in _ask_keys(rows) if not _valid(root, key, rows)]
-    if pending:
+    if pending or fill:
         questions: list[dict[str, Any]] = []
         for key in pending:
             item: dict[str, Any] = {
@@ -476,12 +474,19 @@ def frame_show(root: Path, *, revise: bool = False) -> dict[str, Any]:
             if candidates is not None:
                 item["candidates"] = candidates
             questions.append(item)
-        payload = _ask("missing_keys", rows, missing=pending)
-        payload["questions"] = questions
-        if len(questions) == 1:
-            payload["reference"] = questions[0]["reference"]
-            if "candidates" in questions[0]:
-                payload["candidates"] = questions[0]["candidates"]
+        payload = _ask(
+            "missing_keys" if pending else "fill_na",
+            rows,
+            missing=pending if pending else None,
+        )
+        if questions:
+            payload["questions"] = questions
+            if len(questions) == 1:
+                payload["reference"] = questions[0]["reference"]
+                if "candidates" in questions[0]:
+                    payload["candidates"] = questions[0]["candidates"]
+        if fill:
+            payload["fill_na"] = fill
         return payload
 
     conflict = _conflict(rows)
@@ -623,3 +628,43 @@ def frame_clear(root: Path, cell: str, *, today: date | None = None) -> dict[str
 def render_frame_clear(root: Path, cell: str) -> str:
     """Blank one framing cell and serialize the result as JSON."""
     return json.dumps(frame_clear(root, cell), indent=2) + "\n"
+
+
+def frame_fill(root: Path) -> dict[str, Any]:
+    """Write ``n/a`` for cells the recorded deployment does not use.
+
+    Writes ``journal/JOURNAL.md``. Does not change Status or
+    Revised on. Horizon, gap, and time role are filled when
+    deployment is ``iid`` or ``groups``. Generalize-to is filled
+    when deployment is ``iid`` or ``time``. An unknown deployment
+    fills nothing.
+
+    Raises
+    ------
+    ValueError
+        When the journal or a cell to fill cannot be written.
+    """
+    path = root / "journal" / "JOURNAL.md"
+    if not path.is_file():
+        raise ValueError("journal is missing")
+    rows = _raw_rows(root)
+    keys = _fill_na_keys(rows)
+    if not keys:
+        return {"action": "unchanged", "filled": []}
+    text = path.read_text(encoding="utf-8")
+    start, end, section = _section_span(text)
+    missing = [key for key in keys if key not in _row_keys(section)]
+    if missing:
+        joined = ", ".join(missing)
+        raise ValueError(f"modeling decisions table is missing {joined}")
+    updates = dict.fromkeys(keys, "n/a")
+    path.write_text(
+        text[:start] + _apply_updates(section, updates) + text[end:],
+        encoding="utf-8",
+    )
+    return {"action": "filled", "filled": keys}
+
+
+def render_frame_fill(root: Path) -> str:
+    """Write unused framing cells as ``n/a`` and serialize the result."""
+    return json.dumps(frame_fill(root), indent=2) + "\n"

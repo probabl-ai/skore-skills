@@ -2,7 +2,7 @@
   "name": "probabl-skills",
   "repository": "probabl-ai/skore-skills",
   "description": "Skills to support Machine Learning experimentation using the Python ecosystem.",
-  "catalog_hash": "fc7ffe84087afc38eb63615e52e5339cbe402272b04e54e5e10b3d3d981540a6",
+  "catalog_hash": "9e9ddf99e284d1509af1bc0f543454b3be32a36007095af15083959f84080b90",
   "skills": [
     {
       "id": "explore-ml-data",
@@ -20,7 +20,7 @@
       "summary": "Record the problem, deployment setting, metric, baseline, and fold count before any model code.",
       "category": "methodology",
       "subcategory": null,
-      "hash": "dbdba3aec11308c10336202ae21d308c52a97533108b5a732182d52d06612167"
+      "hash": "7ad46e8963c14c76ea682f012ca6e7cfc0b810a78fd6554a5131ee8f3ddf7cc3"
     },
     {
       "id": "build-ml-pipeline",

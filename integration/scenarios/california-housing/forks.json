@@ -197,7 +197,7 @@
     },
     {
       "id": "discard-ideas",
-      "after": "baseline-close-audit",
+      "after": "baseline-move-on",
       "say": "Discard every open idea.",
       "expect": {
         "files": [

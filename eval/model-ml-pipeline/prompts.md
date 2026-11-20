@@ -312,13 +312,19 @@ and `frame show` already returned `proceed` with a non-null
 **Must do:**
 - Run evaluate, then `review consent`.
 - On `audit`, load `review-ml-experiment`. Do not load
-  `audit-ml-pipeline` from this dispatcher.
+  `audit-ml-pipeline` for the first audit; the Close loads it
+  only for a continuation view.
+- Run the Close in order: `loop notebooks`, record-outcome,
+  site build, the user-facing close. Ask Additional report view
+  / Custom query / Custom plot / Move on only after that close.
 
 **Must NOT do:**
 - Put catalog skill ids, HITL, `G-PKG-NAME` / `G-ENV-MGR` / `G-SKORE-MODE` / `G-TABULAR` / `G-CV-SPLITTER`, or `python -m skore_skills` / `env add` in user-facing questions or the close narrative (trailing `G-REPORT-LOCATOR` / `G-AUDIT-FINDING` and unmanaged `pixi add` / `uv add` / `pip install` lines are allowed).
 - Run `cells run` from this dispatcher.
 - Run `loop notebooks`, record-outcome, or `site build` before
   `review-ml-experiment` returns.
+- Ask the continuation question before the outcome is recorded
+  and the website is updated.
 - Leave History `planned` in any journal excerpt you author.
 - Write the journal files directly instead of dispatching.
 
@@ -355,12 +361,16 @@ and `frame show` already returned `proceed` with a non-null
   updated, because this workspace does not set `policy.site`.
 - Include that locator in the user-facing close (first among
   tokens).
-- Name `git end-turn --stage implement` last. Do not name
+- Ask the continuation question after the close — Additional
+  report view / Custom query / Custom plot / Move on — then
+  name `git end-turn --stage implement` last. Do not name
   `site build`: `policy.site` is not true here.
 
 **Must NOT do:**
 - Put catalog skill ids, HITL, `G-PKG-NAME` / `G-ENV-MGR` / `G-SKORE-MODE` / `G-TABULAR` / `G-CV-SPLITTER`, or `python -m skore_skills` / `env add` in user-facing questions or the close narrative (trailing `G-REPORT-LOCATOR` / `G-AUDIT-FINDING` and unmanaged `pixi add` / `uv add` / `pip install` lines are allowed).
 - Record G-AUDIT-FINDING `n/a — audit not run`.
+- Ask the continuation question before record-outcome and the
+  close.
 - Write the journal files directly instead of record-outcome.
 - Drop the locator.
 - Invent a headline metric.
@@ -663,7 +673,10 @@ and `frame show` already returned `proceed` with a non-null
   build` printed. Do not name `journal/01_baseline.md` or
   `html/01_baseline.html`. Do not say double-click or "no
   server".
+- Ask Additional report view / Custom query / Custom plot /
+  Move on only after that close.
 
 **Must NOT do:**
 - Send the site link before the Results Markdown is published.
+- Ask the continuation question before the site build.
 - Re-execute a source-current experiment notebook at Close.

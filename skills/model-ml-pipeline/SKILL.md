@@ -311,8 +311,9 @@ also ask in chat whether the note looks right.
    - `audit` or `proceed` — load `review-ml-experiment` only if
      `status.skills.review-ml-experiment` is true. It returns the
      digest, G-AUDIT-FINDING, locator, and idea paths. Do not
-     load `audit-ml-pipeline` from this dispatcher.
-     Then § Close, in that order.
+     load `audit-ml-pipeline` for the first audit; § Close step 6
+     loads it only for a continuation view. Then § Close, in that
+     order.
    - Missing skill → one-line skip and run § Close with
      `n/a — audit not run`.
 
@@ -365,7 +366,7 @@ red smoke. The four-phase preview does not enter here, and
 neither does `review consent` `stop`. Run the steps in
 this order. Do not reorder them. `loop notebooks` continues only
 on `skip`. `record` is the `loop artifacts` action, not this
-gate. Red smoke skips steps 3 and 4: do not mark the
+gate. Red smoke skips steps 3–6: do not mark the
 experiment done. This dispatcher owns the user-facing close.
 Children return locator / digest / finding and do not preview it.
 
@@ -420,7 +421,21 @@ Children return locator / digest / finding and do not preview it.
    G-REPORT-LOCATOR (the locator evaluate passed up, or
    `n/a — backend did not expose a locator`) first among
    tokens, then G-AUDIT-FINDING. Index strings, not the narrative.
-6. `python -m skore_skills git end-turn --stage implement`. If
+6. Continuation. One **AskUserQuestion**, none preselected:
+   Additional report view / Custom query / Custom plot /
+   Move on. This is the only post-run question; the results are
+   already recorded and published. Ahead of it, 2–4 lines state
+   what the answer authorizes and the facts it rests on — the
+   checks and metrics just read, the `Displays` names in
+   `scratch/audit/<stem>/accessors.txt`. A view, query, or plot →
+   load `audit-ml-pipeline` only if
+   `status.skills.audit-ml-pipeline` is true (it appends the
+   read-only cell, re-runs `materialize.py`, and re-derives
+   G-AUDIT-FINDING), then `site build --if-stale` when
+   `policy.site` is true and re-present this question. Do not
+   record-outcome again: extra views do not change the checks or
+   metrics. Do not ask it when smoke is red. Move on → step 7.
+7. `python -m skore_skills git end-turn --stage implement`. If
    JSON `action` is `invoke`, load `persist-ml-git` only if
    `status.skills.persist-ml-git` is true and stop; that skill
    returns to triage. If persist is missing, name the pending

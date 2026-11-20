@@ -2,7 +2,7 @@
   "name": "probabl-skills",
   "repository": "probabl-ai/skore-skills",
   "description": "Skills to support Machine Learning experimentation using the Python ecosystem.",
-  "catalog_hash": "592273214150392c1cd11ba2d47449aab57c9fcfde720a8ff9d77099277b4cb7",
+  "catalog_hash": "36be24da904208ab66136bb55dfcd0a6ed1b870b319f31a28b7830dd831637bd",
   "skills": [
     {
       "id": "explore-ml-data",
@@ -38,7 +38,7 @@
       "summary": "Evaluate one sklearn-compatible learner with the locked validation scheme and persist structured skore reports.",
       "category": "methodology",
       "subcategory": null,
-      "hash": "edb8274334ec8e72af68eb5acaeea81a170412b54f02489d8963f8f65df3ca18"
+      "hash": "2980bd99aa80c748b805ebcfd4a316c53d282155e446bb609d4ccf475b7de24c"
     },
     {
       "id": "smoke-test-ml-pipeline",
@@ -56,7 +56,7 @@
       "summary": "Audit a persisted skore report read-only and produce a reusable digest.",
       "category": "methodology",
       "subcategory": null,
-      "hash": "bb0c5c8052f6a0400532eb1607869c3c5ee9c8b417847ba3f161a41d8fc55509"
+      "hash": "575fd7b735b7b718c158d3740bea5c42589a53825b7cffd04b80885e561ee0f5"
     },
     {
       "id": "manage-ml-backlog",
@@ -146,7 +146,7 @@
       "summary": "Require locked problem framing, write the first baseline design note for approval, then coordinate later choices, build, smoke testing, evaluation, and audit.",
       "category": "meta",
       "subcategory": null,
-      "hash": "9da63cc077afc5aaca64653486fe3866379c00b4719616ba3a49ac16fdfbd155"
+      "hash": "ac3eed42d1655d745a4f5106051122d4bfefb8f499de812e49ad209909370789"
     },
     {
       "id": "choose-python-library",

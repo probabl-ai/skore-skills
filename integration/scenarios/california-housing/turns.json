@@ -269,10 +269,11 @@
           "scratch/audit/01_*/audit.md",
           "scratch/audit/01_*/accessors.txt",
           "scratch/audit/01_*/materialize.py",
+          "journal/ideas/*.md",
+          "journal/01_*.md",
           ".skore"
         ],
         "absent": [
-          "journal/ideas/*.md",
           "scratch/results/02_*/report.html"
         ],
         "contains": {
@@ -283,14 +284,20 @@
         "contains_any": {
           "experiments/01_*.py": [
             "skore.evaluate"
+          ],
+          "journal/ideas/*.md": [
+            "Triage: open"
+          ],
+          "journal/01_*.md": [
+            "**State:** done"
           ]
         }
       }
     },
     {
-      "id": "baseline-close-audit",
+      "id": "baseline-move-on",
       "checkpoint": true,
-      "say": "Close audit.",
+      "say": "Move on.",
       "expect": {
         "files": [
           "scratch/results/01_*/report.html",
@@ -307,9 +314,6 @@
           "experiments/02_*.py"
         ],
         "contains_any": {
-          "journal/ideas/*.md": [
-            "Triage: open"
-          ],
           "journal/01_*.md": [
             "**State:** done"
           ]

@@ -274,7 +274,7 @@ def test_materialize_copies_driver(tmp_path: Path) -> None:
     assert str(repo) in text
     assert repo.as_uri() in text
     assert 'skill("setup-ml-project")' in text
-    assert "close the audit" in text
+    assert "record the outcome" in text
     assert "Run the data analysis" in text
     assert "close this stage" in text
     assert "/reload" not in text

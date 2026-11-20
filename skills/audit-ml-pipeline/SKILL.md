@@ -16,8 +16,9 @@ description: >
 
   HOW TO USE: confirm journal, experiment, smoke, and report; place the file
   from `templates/audit.py`; copy `templates/materialize.py` to scratch;
-  execute once; derive G-AUDIT-FINDING; then the continue-or-close gate.
-  Resolve skore symbols with `api get`.
+  execute once; derive G-AUDIT-FINDING; then return the digest so the caller
+  records the outcome and publishes the result before offering a deeper
+  view. Resolve skore symbols with `api get`.
 metadata:
   role: helper
   modelTier: medium
@@ -46,7 +47,8 @@ Authoring hints stay in this skill. `style` is ruff only.
 
 | Came here from… | After audit, next is… |
 |---|---|
-| `model-ml-pipeline` (implement loop) | → Return. This audit execution may already materialize its notebook. The caller runs `python -m skore_skills loop notebooks --stem <stem>` as a freshness gate before record-outcome, then site build and `git end-turn --stage implement`. |
+| `model-ml-pipeline` (implement loop) | → Return. This audit execution may already materialize its notebook. The caller runs `python -m skore_skills loop notebooks --stem <stem>` as a freshness gate before record-outcome, then site build, the user-facing close, and only then the continuation question. |
+| Caller after its close, on a deeper view | → Append the read-only cell, re-run `materialize.py`, re-derive G-AUDIT-FINDING, then `site build --if-stale`. Do not record-outcome again. |
 | User free-text ("audit 02", "re-audit 04") | → Surface metrics, then own the close (see § End of turn) |
 | Re-run of an existing experiment | → Re-execute the existing audit file; surface diff if metrics changed |
 
@@ -54,7 +56,9 @@ The implement loop dispatches audit **after evaluate and before
 record-outcome**. The digest carries the checks summary and metrics
 summary. G-AUDIT-FINDING is a separate normalized finding derived
 from that digest. `manage-ml-backlog` record-outcome consumes both
-and never dispatches audit back.
+and never dispatches audit back. Audit does not stop at a gate
+before the outcome is recorded: the caller records and publishes
+first, then asks whether to dig deeper.
 
 ## Where things live — visual map
 
@@ -175,13 +179,13 @@ reads the digest as text and does not open the Project. See
   agent tools (ruff / ipython / ipykernel).** Install gate fires regardless.
 - **Post-hoc audit — required before ending the turn.** Walk every
   pre-flight row; surface unfilled Evidence cells.
-- **The post-audit gate is mandatory.** After the first digest and
-  every refresh, ask Additional report view / Custom query /
-  Custom plot / Close audit in that exact order unless the user
-  already explicitly closed the audit. The one execution may
-  materialize a policy-enabled notebook and a stale-only site
-  preview before this gate. No close-time conversion, git close,
-  record-outcome, or dispatcher return before Close.
+- **The digest returns before any gate.** After the first digest,
+  hand it back to the caller. The caller records the outcome,
+  updates the website, and presents the result. Only then does it
+  ask Additional report view / Custom query / Custom plot /
+  Move on. Do not ask that question here, and do not defer the
+  close behind it. On the direct path this skill owns the close
+  and asks it after the user-facing result.
 
 ## Forbidden shortcuts
 
@@ -243,7 +247,8 @@ Pre-flight (audit-ml-pipeline):
 - [ ] G-AUDIT-FINDING derived from the executed digest
       Evidence: issue/tip counts + ordered codes + optional metric
                 context | explicit clean-checks value
-- [ ] Post-audit gate answered: additional view | query | plot | close
+- [ ] Continuation routed: digest returned before the close
+      (additional view | query | plot | move on)
 - [ ] Pre-flight re-emitted with evidence before final message.
       Evidence: this checklist appears in the end-of-turn summary.
 ```
@@ -264,9 +269,10 @@ Describe cost from facts: report loading and requested view
 rendering, not model fits or full CV. Unless an observed duration
 is already available, say timing depends on report size and
 selected views and do not invent minutes. Emit this preview once
-for the initial audit; refresh it only when Additional report
-view / Custom query / Custom plot materially changes the work.
-The run pauses at the existing post-audit gate before close.
+for the initial audit; refresh it only when a continuation
+choice (Additional report view / Custom query / Custom plot)
+materially changes the work. The run returns the digest; the
+caller owns the close and the continuation question.
 
 Questions about what the report means are **LLM narrative work**
 over the digest. For a fired check, read its documentation URL
@@ -392,24 +398,22 @@ G-REPORT-LOCATOR from `python -m skore_skills loop locator --stem
 note's Status block. Recompute it after every added view, query,
 or plot because the digest is overwritten.
 
-## Continue auditing
+## Digging deeper
 
-After the initial digest and every successful refresh, unless the
-user already said to close, **AskUserQuestion** with one pick in
-this exact order. None is recommended or preselected.
-
-**Gate context.** Ahead of the question, state in 2–4 lines what
-the answer authorizes and the facts it rests on — echoed inline
-from this turn's digest (the checks and metrics just read, the
-Display names in `accessors.txt`) — plus what each option
-does. A file link is an addition, never the context.
+This runs **after** the outcome is recorded and the website
+published, so the checks and metrics are already visible. The
+caller asks it, or this skill asks it on the direct free-text
+path. One **AskUserQuestion**, none recommended or preselected;
+its context is echoed from this turn's digest (the checks and
+metrics just read, the Display names in `accessors.txt`). Only a
+view, query, or plot edits this skill; Move on is no edit.
 
 | Label | Contract |
 |---|---|
 | Additional report view | Menu labels are **exactly** the names under the `Displays` group of this turn's `help()` trees in `scratch/audit/<stem>/accessors.txt`. Confirm the picked name with `python -m skore_skills api get`. The list is task-dependent — a regression report has no `roc`. Omit anything the trees do not list; never show remembered Display names. Ask one pick before editing. |
 | Custom query | Wait for one concrete read-only question about the loaded report. Append only the minimal accessor cells needed to answer it, in `audit/<stem>.py` and in the materialize `<CALL>` block. Prefer a name from the trees when it answers the question. |
-| Custom plot | Only when the trees have no Display for this chart. Load `plot-ml-figure` only if `status.skills.plot-ml-figure` is true; else one-line skip and return to this gate. Append the read-only plot to both files. `materialize.py` saves the figure under `scratch/results/<stem>/`. |
-| Close audit | Continue to the existing dispatched or direct close. |
+| Custom plot | Only when the trees have no Display for this chart. Load `plot-ml-figure` only if `status.skills.plot-ml-figure` is true; else one-line skip and return to this choice. Append the read-only plot to both files. `materialize.py` saves the figure under `scratch/results/<stem>/`. |
+| Move on | No audit edit. The caller continues its close. |
 
 Additional report view / Custom query / Custom plot all edit the
 same durable `audit/<stem>.py`, **below** `## Core audit complete`,
@@ -419,11 +423,10 @@ notebooks are on, derive
 G-AUDIT-FINDING again
 with `python -m skore_skills audit finding --stem <stem>`
 (from checks + metrics only), then run `site build --if-stale`
-when site policy is true and re-present this same gate. Do not
-run the close-time `loop notebooks`, run `git end-turn`,
-record-outcome, or return to the dispatcher before Close audit.
-The audit remains read-only: no `evaluate`, no `put`, and no
-workspace-data mutation.
+when site policy is true. Do not record-outcome again: extra
+views do not change the checks or metrics. The audit remains
+read-only: no `evaluate`, no `put`, and no workspace-data
+mutation.
 
 ### Extra Display cells
 
@@ -479,10 +482,10 @@ python -m skore_skills audit finding --stem <stem>
 The notebook does not contain the materialize writes. If site
 policy is `true` and `export-ml-site` is installed, run
 `python -m skore_skills site build --if-stale` after materialize
-and before that gate. When the build ran, say the website has
-been updated and paste the `file://` line from that output
-verbatim. Do
-not name the design-note markdown or `html/<stem>.html`.
+so the result viewers are fresh. The caller's close (or the
+direct close in § End of turn) states the website update; do not
+claim it here and do not name the design-note markdown or
+`html/<stem>.html`.
 
 Paste JSON `finding` verbatim. Read `audit.md`; do not derive it
 from the notebook.
@@ -537,7 +540,7 @@ Identical stems, 1:1. By the time the experiment shows `done` in
 | Caller | When |
 |---|---|
 | `review-ml-experiment` | When review consent is `audit`, before idea files |
-| `model-ml-pipeline` | Does not load this skill; it loads `review-ml-experiment` |
+| `model-ml-pipeline` | Loads `review-ml-experiment` for the first audit; loads this skill directly only for a continuation view after its close |
 | `evaluate-ml-pipeline` | Standalone evaluate may run audit before its close |
 | User free-text | "audit experiment 02", "show me what 03", "re-audit 04" — resolves directly |
 
@@ -555,27 +558,22 @@ Identical stems, 1:1. By the time the experiment shows `done` in
 
 ## End of turn
 
-**Dispatched** (`model-ml-pipeline`, `evaluate-ml-pipeline`, or
-`manage-ml-backlog` this turn), after **Close audit**: run
-`python -m skore_skills audit finding --stem <stem>` and
-`python -m skore_skills loop locator --stem <stem>`. Return the
-digest, JSON `finding`, JSON `locator`, and an optional
-headline to that caller. Stop. Do not run record-outcome,
-the close-time `loop notebooks`, another site build,
-`git end-turn`, or triage here. The live execution/preview above
-is not repeated. When the caller is
-`model-ml-pipeline` or `evaluate-ml-pipeline`, tell it to run
-`python -m skore_skills loop notebooks --stem <stem>` and obey
-`convert` with `notebook fill` before record-outcome. That gate
-continues on `skip`. `record` is `loop artifacts`, not the
-notebook gate. Then `site build` and that caller's
-`git end-turn` (`--stage implement` from model, `--stage
-evaluate` from evaluate). Naming the fill commands is not the
-close. Filling only the audit file does not finish that close. Do
-not paste the direct-audit close as a preview of what the
-dispatcher will run.
+**Dispatched** (`model-ml-pipeline` or `evaluate-ml-pipeline`
+this turn): run `python -m skore_skills audit finding --stem
+<stem>` and `python -m skore_skills loop locator --stem <stem>`.
+Return the digest, JSON `finding`, JSON `locator`, and an
+optional headline to that caller. Stop. The caller owns the
+close: it runs `python -m skore_skills loop notebooks --stem
+<stem>`, obeys `convert` with `notebook fill`, runs
+record-outcome, `site build`, presents the user-facing close,
+and only then asks Additional report view / Custom query /
+Custom plot / Move on. Tell the caller that. Do not run
+record-outcome, the close-time `loop notebooks`, a site build,
+`git end-turn`, or triage here, and do not ask or preview the
+continuation question. Do not paste the direct-audit close as a
+preview of what the dispatcher will run.
 
-**Direct free-text audit, after Close audit:** this skill owns the close. Do not start it before Close audit. Run
+**Direct free-text audit:** this skill owns the close. Run
 `python -m skore_skills loop artifacts --stem <stem>` first
 (`record` expected). `record` is that command's action, not the
 notebook gate. Then this order. Do not reorder it.
@@ -618,7 +616,17 @@ notebook gate. Then this order. Do not reorder it.
    `reports/` path), then G-AUDIT-FINDING. Index strings, not
    the narrative.
    Dispatched audit never writes this message.
-6. `python -m skore_skills git end-turn --stage evaluate`. The
+6. Continuation. One **AskUserQuestion**, none preselected:
+   Additional report view / Custom query / Custom plot /
+   Move on. Ahead of it, 2–4 lines state what the answer
+   authorizes and the facts it rests on — the checks and metrics
+   just read, the `Displays` names in `accessors.txt`. A view,
+   query, or plot edits `audit/<stem>.py`, re-runs
+   `materialize.py`, re-derives G-AUDIT-FINDING, runs
+   `site build --if-stale` when `policy.site` is true, and
+   re-presents this question. Do not record-outcome again: extra
+   views do not change the checks or metrics. Move on → step 7.
+7. `python -m skore_skills git end-turn --stage evaluate`. The
    audit continues the evaluate stage; there is no `audit` stage.
    If JSON `action` is `invoke`, load `persist-ml-git` only if
    `status.skills.persist-ml-git` is true and stop; that skill

@@ -12,7 +12,8 @@ description: >
 
   HOW TO USE: run `python -m skore_skills frame show`. Read each reference
   named in `questions` once, ask every key in `missing` in one message, and
-  write every answered value. If a key is still unanswered, ask it and stop.
+  write every answered value. On `fill_na`, run `frame fill`. If a key
+  is still unanswered, ask it and stop.
   If the write fills every required decision, set Status to `locked`, say
   those choices are reused and can be changed by name, then follow `proceed`.
   Do not ask to confirm. If that command is missing, or the recorded task is
@@ -94,23 +95,52 @@ wrapper CLI.
    table written in this message and the Status rule there. Say
    the reuse and change lines, and say there is no splitter
    translation. Do not load `build-ml-pipeline`. Stop this turn.
-5. `ask` / `missing_keys` — read each distinct `reference` in
-   `questions` once before asking. Do not open any other file
-   under `references/`. Ask every key in `missing` in one
-   message. For a question that has `candidates`, those are the
-   options. When `candidates` is absent, ask for the value the
-   reference describes. Draw on three sources, and only what they
-   actually say: the EDA report, free-form text that came with
-   the data if any is present (notes, a dictionary, or a README
-   beside the raw files), and facts the user stated. If none of
-   that text is present, do not invent it. When one of them
-   already states the fact, quote it in the question. Write every
-   Value the user answered in this turn. Do not rename the
-   Variable column. Do not stop after the first decision.
-   When the deployment makes other rows inapplicable, set those
-   rows to `n/a` in the same edit. Horizon, gap, and time role
-   are `n/a` unless deployment is time. Generalize-to is `n/a`
-   unless deployment is groups. A fold count of `1` is one
+5. `ask` / `missing_keys` or `ask` / `fill_na` — when `fill_na`
+   is present, do not ask yet. Run the command below, then
+   `frame show` again, and continue this step with that JSON.
+   The command writes `n/a` for every key in `fill_na`. Do not
+   ask those keys. Do not invent a value for them.
+
+   ```
+   python -m skore_skills frame fill
+   ```
+
+   When the reason is `missing_keys`, read each distinct
+   `reference` in `questions` once before asking. Do not open
+   any other file under `references/`. Ask every key in
+   `missing` in one message. Horizon, gap, and time role are
+   questions only when `missing` lists them, which is after
+   deployment is `time`. Generalize-to is a question only when
+   `missing` lists it, which is after deployment is `groups`.
+   Do not ask any of those in the same message as deployment,
+   and do not add a conditional aside. For a question that has
+   `candidates`, those are the options. When `candidates` is
+   absent, ask for the value the reference describes. Draw on
+   three sources, and only what they actually say: the EDA
+   report, free-form text that came with the data if any is
+   present (notes, a dictionary, or a README beside the raw
+   files), and facts the user stated. If none of that text is
+   present, do not invent it. When one of them already states
+   the fact, quote it in the question. Write every value the
+   user answered for a key in `missing` as a journal row.
+   For deployment, the question is the three candidates and
+   nothing else. Do not gloss a horizon, a gap, a time column,
+   a feature, or a group id. If they stated a generalize-to
+   column while deployment is still empty, write
+   `| Generalize to | <their column> |`, ask deployment, and
+   stop. Do not ask horizon, gap, or time role in that
+   message. Do not rename the Variable column. Do not stop
+   after the first decision when other keys in `missing` are
+   still unanswered. After that write, run `frame show` again.
+   If the new JSON has `fill_na`, run `frame fill` before
+   asking or locking. A deployment of `iid` or `groups` makes
+   horizon, gap, and time role `n/a`. A deployment of `iid`
+   or `time` makes generalize-to `n/a`, including a value
+   volunteered earlier. After that fill, say the filled rows
+   are `n/a`. Do not describe a filled time-role row as a
+   feature, an ordinary column, or unused, and do not name
+   `covariate` or `sort_key` for a row that is `n/a`.
+   A fold count of `1` is one
    train/test split drawn from a single table. When the EDA
    report, the text shipped with the data, or the user already
    names a separate training table and test table, offer using
@@ -127,8 +157,10 @@ wrapper CLI.
    `proceed`, say the reuse and change lines, then follow step 8.
    On `ask` / `set`, write Status `locked` only, say those lines,
    run `frame show` again, and follow step 8. If that `frame show`
-   still returns `missing_keys`, the table was not complete: ask
-   those keys and stop, and leave Status `draft`.
+   still returns `missing_keys` or `fill_na`, the table was not
+   complete: on `fill_na`, run `frame fill` once more and show
+   again; on `missing_keys`, ask those keys and stop, and leave
+   Status `draft`.
    Reuse and change lines, quoting JSON `context` in 2–4 lines:
    these choices are reused for the rest of the experiment so
    models stay comparable, and any one of them can be changed by
@@ -187,6 +219,7 @@ read-only `frame show` with no Markdown change does not build.
   `TimeSeriesSplit`, `KFold`, `GroupKFold`, and `gap=` stay out of
   the table.
 - Do not re-ask a key that is absent from `missing`.
+- Do not ask a key in `fill_na`. `frame fill` writes those cells.
 - Do not add an option that is absent from `candidates`.
 - Do not open a reference the JSON did not name. When the
   command is missing, follow Fallback below instead of opening

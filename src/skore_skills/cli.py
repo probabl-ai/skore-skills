@@ -323,6 +323,17 @@ def frame_clear_cmd(cell: str) -> None:
         raise click.UsageError(str(exc)) from exc
 
 
+@frame_group.command("fill")
+def frame_fill_cmd() -> None:
+    """Write n/a for framing cells the recorded deployment does not use."""
+    from skore_skills.frame import render_frame_fill
+
+    try:
+        click.echo(render_frame_fill(Path.cwd()), nl=False)
+    except ValueError as exc:
+        raise click.UsageError(str(exc)) from exc
+
+
 @cli.group("design")
 def design_group() -> None:
     """Inspect deterministic design-note gates."""

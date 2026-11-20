@@ -4,17 +4,18 @@
     {
       "id": 1,
       "title": "A blank journal asks every missing decision",
-      "prompt": "[Workspace state \u2014 read but do not narrate back:\n- `status.setup.pending` is empty.\n- `journal/JOURNAL.md` exists. Modeling decisions Status is still\n  the empty placeholder.\n- `scratch/data_analysis/extras.json` `targets` is one entry,\n  column `label`, task `classification`.\n- `python -m skore_skills frame show` returns `ask` /\n  `missing_keys`. `missing` lists prediction_goal, deployment,\n  horizon, gap, time_role, generalize_to, known_at_predict,\n  metric_role, metric, baseline, baseline_note, and folds.\n- `questions` names a reference for each of those keys.\n  prediction_goal candidates are `probabilities`, `point_labels`,\n  and `uncovered`. The horizon and gap questions cite\n  `references/horizon-gap.md` and have no candidates. The\n  baseline question cites `references/baseline.md`.]\n\nWhich comparison metric should we lock before building?",
-      "expected_output": "Behavioural response satisfying: - Run `python -m skore_skills frame show`. - Read each named reference once, including `references/prediction-goal.md`, `references/horizon-gap.md`, and `references/baseline.md`. - Ask every key in `missing` in one message. Prediction-goal options are only `probabilities`, `point_labels`, and `uncovered`. Say horizon and gap are n/a unless the deployment is time, and generalize-to is n/a unless the deployment is groups. It must NOT: - Put catalog skill ids, HITL, `G-PKG-NAME` / `G-ENV-MGR` / `G-SKORE-MODE` / `G-TABULAR` / `G-CV-SPLITTER`, or `python -m skore_skills` / `env add` in user-facing questions or the close narrative (trailing `G-REPORT-LOCATOR` / `G-AUDIT-FINDING` and unmanaged `pixi add` / `uv add` / `pip install` lines are allowed). - Write Python, a pipeline, or a splitter constructor. - Ask only the prediction goal and stop.",
+      "prompt": "[Workspace state \u2014 read but do not narrate back:\n- `status.setup.pending` is empty.\n- `journal/JOURNAL.md` exists. Modeling decisions Status is still\n  the empty placeholder.\n- `scratch/data_analysis/extras.json` `targets` is one entry,\n  column `label`, task `classification`.\n- `python -m skore_skills frame show` returns `ask` /\n  `missing_keys`. `missing` lists prediction_goal, deployment,\n  known_at_predict, metric_role, metric, baseline, baseline_note,\n  and folds. Horizon, gap, time_role, and generalize_to are\n  absent. There is no `fill_na`.\n- `questions` names a reference for each of those keys.\n  prediction_goal candidates are `probabilities`, `point_labels`,\n  and `uncovered`. The deployment question cites\n  `references/deployment.md`. The known-at-predict question cites\n  `references/generalize-to.md`. The baseline question cites\n  `references/baseline.md`.]\n\nWhich comparison metric should we lock before building?",
+      "expected_output": "Behavioural response satisfying: - Run `python -m skore_skills frame show`. - Read each named reference once, including `references/prediction-goal.md`, `references/deployment.md`, `references/generalize-to.md`, and `references/baseline.md`. - Ask every key in `missing` in one message. Prediction-goal options are only `probabilities`, `point_labels`, and `uncovered`. It must NOT: - Put catalog skill ids, HITL, `G-PKG-NAME` / `G-ENV-MGR` / `G-SKORE-MODE` / `G-TABULAR` / `G-CV-SPLITTER`, or `python -m skore_skills` / `env add` in user-facing questions or the close narrative (trailing `G-REPORT-LOCATOR` / `G-AUDIT-FINDING` and unmanaged `pixi add` / `uv add` / `pip install` lines are allowed). - Write Python, a pipeline, or a splitter constructor. - Ask only the prediction goal and stop.",
       "files": [],
       "expectations": [
         "Run `python -m skore_skills frame show`.",
-        "Read each named reference once, including `references/prediction-goal.md`, `references/horizon-gap.md`, and `references/baseline.md`.",
-        "Ask every key in `missing` in one message. Prediction-goal options are only `probabilities`, `point_labels`, and `uncovered`. Say horizon and gap are n/a unless the deployment is time, and generalize-to is n/a unless the deployment is groups.",
+        "Read each named reference once, including `references/prediction-goal.md`, `references/deployment.md`, `references/generalize-to.md`, and `references/baseline.md`.",
+        "Ask every key in `missing` in one message. Prediction-goal options are only `probabilities`, `point_labels`, and `uncovered`.",
         "Ask for one baseline token for the Baseline cell.",
         "The response does NOT: Put catalog skill ids, HITL, `G-PKG-NAME` / `G-ENV-MGR` / `G-SKORE-MODE` / `G-TABULAR` / `G-CV-SPLITTER`, or `python -m skore_skills` / `env add` in user-facing questions or the close narrative (trailing `G-REPORT-LOCATOR` / `G-AUDIT-FINDING` and unmanaged `pixi add` / `uv add` / `pip install` lines are allowed).",
         "The response does NOT: Write Python, a pipeline, or a splitter constructor.",
         "The response does NOT: Ask only the prediction goal and stop.",
+        "The response does NOT: Ask for a horizon, a gap, a time-column role, or a column to generalize to. Do not say those rows are answered only if the deployment is time or groups.",
         "The response does NOT: Invent a horizon, a baseline, or a fold count."
       ],
       "tools": false,
@@ -24,10 +25,11 @@
     {
       "id": 2,
       "title": "A time deployment asks the remaining cells",
-      "prompt": "[Workspace state \u2014 read but do not narrate back:\n- `status.setup.pending` is empty.\n- Prediction goal is `point_predictions` and Deployment is `time`.\n  Status is `draft`.\n- `frame show` returns `missing` with horizon, gap, time_role,\n  known_at_predict, metric_role, metric, baseline, baseline_note,\n  and folds. The horizon and gap questions cite\n  `references/horizon-gap.md` and have no candidates.]\n\nNew rows arrive later than the fit. Lock that.",
-      "expected_output": "Behavioural response satisfying: - Read `references/horizon-gap.md` once. - Ask every still-missing key in one message. - Explain horizon as the lead from prediction time to the target, and gap as the delay from the end of training to when the forecast is issued. Ask for the horizons as numbers in one unit, and for the gap in that same unit. A gap of 0 is allowed. It must NOT: - Put catalog skill ids, HITL, `G-PKG-NAME` / `G-ENV-MGR` / `G-SKORE-MODE` / `G-TABULAR` / `G-CV-SPLITTER`, or `python -m skore_skills` / `env add` in user-facing questions or the close narrative (trailing `G-REPORT-LOCATOR` / `G-AUDIT-FINDING` and unmanaged `pixi add` / `uv add` / `pip install` lines are allowed). - Ask for a generalize-to column. - Write `TimeSeriesSplit` or `gap=` into the journal.",
+      "prompt": "[Workspace state \u2014 read but do not narrate back:\n- `status.setup.pending` is empty.\n- Prediction goal is `point_predictions` and Deployment is `time`.\n  Status is `draft`.\n- `frame show` returns `missing` with horizon, gap, time_role,\n  known_at_predict, metric_role, metric, baseline, baseline_note,\n  and folds. `fill_na` lists `generalize_to`. The horizon and\n  gap questions cite `references/horizon-gap.md` and have no\n  candidates. The time-role question cites\n  `references/time-role.md`.]\n\nNew rows arrive later than the fit. Lock that.",
+      "expected_output": "Behavioural response satisfying: - Run `python -m skore_skills frame fill` before asking, so generalize-to is `n/a`. - Read `references/horizon-gap.md` once. - Ask every still-missing key in one message. It must NOT: - Put catalog skill ids, HITL, `G-PKG-NAME` / `G-ENV-MGR` / `G-SKORE-MODE` / `G-TABULAR` / `G-CV-SPLITTER`, or `python -m skore_skills` / `env add` in user-facing questions or the close narrative (trailing `G-REPORT-LOCATOR` / `G-AUDIT-FINDING` and unmanaged `pixi add` / `uv add` / `pip install` lines are allowed). - Ask for a generalize-to column. - Write `TimeSeriesSplit` or `gap=` into the journal.",
       "files": [],
       "expectations": [
+        "Run `python -m skore_skills frame fill` before asking, so generalize-to is `n/a`.",
         "Read `references/horizon-gap.md` once.",
         "Ask every still-missing key in one message.",
         "Explain horizon as the lead from prediction time to the target, and gap as the delay from the end of training to when the forecast is issued. Ask for the horizons as numbers in one unit, and for the gap in that same unit. A gap of 0 is allowed.",
@@ -253,7 +255,7 @@
     {
       "id": 14,
       "title": "A complete answer set is recorded in the same turn",
-      "prompt": "[Workspace state \u2014 read but do not narrate back:\n- `status.setup.pending` is empty.\n- Status is still the empty placeholder. No decision cell is\n  filled.\n- The first `frame show` returns `ask` / `missing_keys` for\n  every required key.\n- After those cells are written with Status `locked`, a second\n  `frame show` returns `proceed` with a non-null `translation`.\n  This turn was not dispatched by `model-ml-pipeline`.\n- No experiment script exists. History has no running, done, or\n  abandoned model row. `status.skills.model-ml-pipeline` is true.]\n\nPrediction goal: point_predictions. Deployment: iid. Horizon,\ngap, generalize-to, known at predict, and time role: n/a.\nMetric role: point_error. Metric: RMSE. Baseline: dummy.\nBaseline note: mean house value. Folds: 2.",
+      "prompt": "[Workspace state \u2014 read but do not narrate back:\n- `status.setup.pending` is empty.\n- Status is still the empty placeholder. No decision cell is\n  filled.\n- The first `frame show` returns `ask` / `missing_keys`.\n  Horizon, gap, time role, and generalize-to are not in\n  `missing` while deployment is empty. The user message already\n  sets those cells to `n/a`.\n- After those cells are written with Status `locked`, a second\n  `frame show` returns `proceed` with a non-null `translation`.\n  This turn was not dispatched by `model-ml-pipeline`.\n- No experiment script exists. History has no running, done, or\n  abandoned model row. `status.skills.model-ml-pipeline` is true.]\n\nPrediction goal: point_predictions. Deployment: iid. Horizon,\ngap, generalize-to, known at predict, and time role: n/a.\nMetric role: point_error. Metric: RMSE. Baseline: dummy.\nBaseline note: mean house value. Folds: 2.",
       "expected_output": "Behavioural response satisfying: - Write every decision from the user message. Set Status to `locked`. - Run `frame show` again in this turn. - Say these choices are reused for the rest of the experiment so models stay comparable, and that any one of them can be changed by naming it. It must NOT: - Put catalog skill ids, HITL, `G-PKG-NAME` / `G-ENV-MGR` / `G-SKORE-MODE` / `G-TABULAR` / `G-CV-SPLITTER`, or `python -m skore_skills` / `env add` in user-facing questions or the close narrative (trailing `G-REPORT-LOCATOR` / `G-AUDIT-FINDING` and unmanaged `pixi add` / `uv add` / `pip install` lines are allowed). - Leave Status `draft`. - AskUserQuestion with Lock, Modify, and Stop.",
       "files": [],
       "expectations": [
@@ -275,14 +277,15 @@
     {
       "id": 15,
       "title": "One answered cell does not fill the rest",
-      "prompt": "[Workspace state \u2014 read but do not narrate back:\n- `status.setup.pending` is empty.\n- Status is `draft`. Deployment, horizon, gap, time role, and\n  generalize-to are empty. The other required cells are valid.\n- `frame show` returns `ask` / `missing_keys`. `missing` lists\n  deployment, horizon, gap, time_role, and generalize_to.]\n\nGeneralize to a column that combines latitude and longitude.",
-      "expected_output": "Behavioural response satisfying: - Write the generalize-to cell from the user message. - Ask every still-unanswered key in `missing` and stop. It must NOT: - Put catalog skill ids, HITL, `G-PKG-NAME` / `G-ENV-MGR` / `G-SKORE-MODE` / `G-TABULAR` / `G-CV-SPLITTER`, or `python -m skore_skills` / `env add` in user-facing questions or the close narrative (trailing `G-REPORT-LOCATOR` / `G-AUDIT-FINDING` and unmanaged `pixi add` / `uv add` / `pip install` lines are allowed). - Invent deployment, horizon, gap, or time role. - AskUserQuestion with Lock, Modify, and Stop.",
+      "prompt": "[Workspace state \u2014 read but do not narrate back:\n- `status.setup.pending` is empty.\n- Status is `draft`. Deployment, horizon, gap, time role, and\n  generalize-to are empty. The other required cells are valid.\n- `frame show` returns `ask` / `missing_keys`. `missing` is\n  `deployment` only. Horizon, gap, time_role, and generalize_to\n  are absent. There is no `fill_na`.]\n\nGeneralize to a column that combines latitude and longitude.",
+      "expected_output": "Behavioural response satisfying: - Write a `| Generalize to |` row whose value is the column the user described. - Ask deployment using only `iid`, `time`, and `groups`, and stop. It must NOT: - Put catalog skill ids, HITL, `G-PKG-NAME` / `G-ENV-MGR` / `G-SKORE-MODE` / `G-TABULAR` / `G-CV-SPLITTER`, or `python -m skore_skills` / `env add` in user-facing questions or the close narrative (trailing `G-REPORT-LOCATOR` / `G-AUDIT-FINDING` and unmanaged `pixi add` / `uv add` / `pip install` lines are allowed). - Write a value for deployment, horizon, gap, or time role. - Ask a separate question for a horizon, a gap, or a time-column role.",
       "files": [],
       "expectations": [
-        "Write the generalize-to cell from the user message.",
-        "Ask every still-unanswered key in `missing` and stop.",
+        "Write a `| Generalize to |` row whose value is the column the user described.",
+        "Ask deployment using only `iid`, `time`, and `groups`, and stop.",
         "The response does NOT: Put catalog skill ids, HITL, `G-PKG-NAME` / `G-ENV-MGR` / `G-SKORE-MODE` / `G-TABULAR` / `G-CV-SPLITTER`, or `python -m skore_skills` / `env add` in user-facing questions or the close narrative (trailing `G-REPORT-LOCATOR` / `G-AUDIT-FINDING` and unmanaged `pixi add` / `uv add` / `pip install` lines are allowed).",
-        "The response does NOT: Invent deployment, horizon, gap, or time role.",
+        "The response does NOT: Write a value for deployment, horizon, gap, or time role.",
+        "The response does NOT: Ask a separate question for a horizon, a gap, or a time-column role.",
         "The response does NOT: AskUserQuestion with Lock, Modify, and Stop.",
         "The response does NOT: Set Status to `locked`."
       ],
@@ -380,6 +383,25 @@
         "The response does NOT: Offer `probabilities` or `point_labels` for the pair.",
         "The response does NOT: Treat the pair as one multiclass column or as multi-output regression.",
         "The response does NOT: Write a splitter class or Python."
+      ],
+      "tools": false,
+      "sandbox": [],
+      "expect_files": []
+    },
+    {
+      "id": 21,
+      "title": "An i.i.d. answer does not keep a time-column role",
+      "prompt": "[Workspace state \u2014 read but do not narrate back:\n- `status.setup.pending` is empty.\n- Status is `draft`. Prediction goal, known at predict, metric\n  role, metric, baseline, baseline note, and folds are already\n  valid. Deployment, horizon, gap, time role, and generalize-to\n  are empty.\n- The first `frame show` returns `ask` / `missing_keys`.\n  `missing` is `deployment`. There is no `fill_na`. Candidates\n  are `iid`, `time`, and `groups`.\n- After deployment is written `iid`, `frame show` returns `ask`\n  / `fill_na`. `fill_na` lists horizon, gap, time_role, and\n  generalize_to. There is no `missing`.\n- `python -m skore_skills frame fill` writes `n/a` for those\n  four cells and does not change Status. The following\n  `frame show` returns `ask` / `set`.]\n\nIndependent new rows. Use the time column as a feature.",
+      "expected_output": "Behavioural response satisfying: - Write deployment `iid`. - Run `python -m skore_skills frame fill` so horizon, gap, time role, and generalize-to are `n/a`. - Do not ask another framing question before that fill. It must NOT: - Put catalog skill ids, HITL, `G-PKG-NAME` / `G-ENV-MGR` / `G-SKORE-MODE` / `G-TABULAR` / `G-CV-SPLITTER`, or `python -m skore_skills` / `env add` in user-facing questions or the close narrative (trailing `G-REPORT-LOCATOR` / `G-AUDIT-FINDING` and unmanaged `pixi add` / `uv add` / `pip install` lines are allowed). - Ask for a horizon, a gap, a time-column role, or a column to generalize to. - Say the time column is a feature, or write `covariate` or `sort_key` in the time role.",
+      "files": [],
+      "expectations": [
+        "Write deployment `iid`.",
+        "Run `python -m skore_skills frame fill` so horizon, gap, time role, and generalize-to are `n/a`.",
+        "Do not ask another framing question before that fill.",
+        "The response does NOT: Put catalog skill ids, HITL, `G-PKG-NAME` / `G-ENV-MGR` / `G-SKORE-MODE` / `G-TABULAR` / `G-CV-SPLITTER`, or `python -m skore_skills` / `env add` in user-facing questions or the close narrative (trailing `G-REPORT-LOCATOR` / `G-AUDIT-FINDING` and unmanaged `pixi add` / `uv add` / `pip install` lines are allowed).",
+        "The response does NOT: Ask for a horizon, a gap, a time-column role, or a column to generalize to.",
+        "The response does NOT: Say the time column is a feature, or write `covariate` or `sort_key` in the time role.",
+        "The response does NOT: Invent a horizon or a gap."
       ],
       "tools": false,
       "sandbox": [],

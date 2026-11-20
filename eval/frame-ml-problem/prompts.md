@@ -15,30 +15,33 @@
   column `label`, task `classification`.
 - `python -m skore_skills frame show` returns `ask` /
   `missing_keys`. `missing` lists prediction_goal, deployment,
-  horizon, gap, time_role, generalize_to, known_at_predict,
-  metric_role, metric, baseline, baseline_note, and folds.
+  known_at_predict, metric_role, metric, baseline, baseline_note,
+  and folds. Horizon, gap, time_role, and generalize_to are
+  absent. There is no `fill_na`.
 - `questions` names a reference for each of those keys.
   prediction_goal candidates are `probabilities`, `point_labels`,
-  and `uncovered`. The horizon and gap questions cite
-  `references/horizon-gap.md` and have no candidates. The
-  baseline question cites `references/baseline.md`.
+  and `uncovered`. The deployment question cites
+  `references/deployment.md`. The known-at-predict question cites
+  `references/generalize-to.md`. The baseline question cites
+  `references/baseline.md`.
 
 **Must do:**
 - Run `python -m skore_skills frame show`.
 - Read each named reference once, including
-  `references/prediction-goal.md`, `references/horizon-gap.md`,
-  and `references/baseline.md`.
+  `references/prediction-goal.md`, `references/deployment.md`,
+  `references/generalize-to.md`, and `references/baseline.md`.
 - Ask every key in `missing` in one message. Prediction-goal
   options are only `probabilities`, `point_labels`, and
-  `uncovered`. Say horizon and gap are n/a unless the deployment
-  is time, and generalize-to is n/a unless the deployment is
-  groups.
+  `uncovered`.
 - Ask for one baseline token for the Baseline cell.
 
 **Must NOT do:**
 - Put catalog skill ids, HITL, `G-PKG-NAME` / `G-ENV-MGR` / `G-SKORE-MODE` / `G-TABULAR` / `G-CV-SPLITTER`, or `python -m skore_skills` / `env add` in user-facing questions or the close narrative (trailing `G-REPORT-LOCATOR` / `G-AUDIT-FINDING` and unmanaged `pixi add` / `uv add` / `pip install` lines are allowed).
 - Write Python, a pipeline, or a splitter constructor.
 - Ask only the prediction goal and stop.
+- Ask for a horizon, a gap, a time-column role, or a column to
+  generalize to. Do not say those rows are answered only if the
+  deployment is time or groups.
 - Invent a horizon, a baseline, or a fold count.
 
 ---
@@ -54,10 +57,14 @@
   Status is `draft`.
 - `frame show` returns `missing` with horizon, gap, time_role,
   known_at_predict, metric_role, metric, baseline, baseline_note,
-  and folds. The horizon and gap questions cite
-  `references/horizon-gap.md` and have no candidates.
+  and folds. `fill_na` lists `generalize_to`. The horizon and
+  gap questions cite `references/horizon-gap.md` and have no
+  candidates. The time-role question cites
+  `references/time-role.md`.
 
 **Must do:**
+- Run `python -m skore_skills frame fill` before asking, so
+  generalize-to is `n/a`.
 - Read `references/horizon-gap.md` once.
 - Ask every still-missing key in one message.
 - Explain horizon as the lead from prediction time to the target,
@@ -389,8 +396,10 @@
 - `status.setup.pending` is empty.
 - Status is still the empty placeholder. No decision cell is
   filled.
-- The first `frame show` returns `ask` / `missing_keys` for
-  every required key.
+- The first `frame show` returns `ask` / `missing_keys`.
+  Horizon, gap, time role, and generalize-to are not in
+  `missing` while deployment is empty. The user message already
+  sets those cells to `n/a`.
 - After those cells are written with Status `locked`, a second
   `frame show` returns `proceed` with a non-null `translation`.
   This turn was not dispatched by `model-ml-pipeline`.
@@ -425,16 +434,21 @@
 - `status.setup.pending` is empty.
 - Status is `draft`. Deployment, horizon, gap, time role, and
   generalize-to are empty. The other required cells are valid.
-- `frame show` returns `ask` / `missing_keys`. `missing` lists
-  deployment, horizon, gap, time_role, and generalize_to.
+- `frame show` returns `ask` / `missing_keys`. `missing` is
+  `deployment` only. Horizon, gap, time_role, and generalize_to
+  are absent. There is no `fill_na`.
 
 **Must do:**
-- Write the generalize-to cell from the user message.
-- Ask every still-unanswered key in `missing` and stop.
+- Write a `| Generalize to |` row whose value is the column
+  the user described.
+- Ask deployment using only `iid`, `time`, and `groups`, and
+  stop.
 
 **Must NOT do:**
 - Put catalog skill ids, HITL, `G-PKG-NAME` / `G-ENV-MGR` / `G-SKORE-MODE` / `G-TABULAR` / `G-CV-SPLITTER`, or `python -m skore_skills` / `env add` in user-facing questions or the close narrative (trailing `G-REPORT-LOCATOR` / `G-AUDIT-FINDING` and unmanaged `pixi add` / `uv add` / `pip install` lines are allowed).
-- Invent deployment, horizon, gap, or time role.
+- Write a value for deployment, horizon, gap, or time role.
+- Ask a separate question for a horizon, a gap, or a
+  time-column role.
 - AskUserQuestion with Lock, Modify, and Stop.
 - Set Status to `locked`.
 
@@ -579,3 +593,40 @@
 - Treat the pair as one multiclass column or as multi-output
   regression.
 - Write a splitter class or Python.
+
+---
+
+## CASE_21 — An i.i.d. answer does not keep a time-column role
+
+**User prompt:**
+> Independent new rows. Use the time column as a feature.
+
+**Assumed workspace state:**
+- `status.setup.pending` is empty.
+- Status is `draft`. Prediction goal, known at predict, metric
+  role, metric, baseline, baseline note, and folds are already
+  valid. Deployment, horizon, gap, time role, and generalize-to
+  are empty.
+- The first `frame show` returns `ask` / `missing_keys`.
+  `missing` is `deployment`. There is no `fill_na`. Candidates
+  are `iid`, `time`, and `groups`.
+- After deployment is written `iid`, `frame show` returns `ask`
+  / `fill_na`. `fill_na` lists horizon, gap, time_role, and
+  generalize_to. There is no `missing`.
+- `python -m skore_skills frame fill` writes `n/a` for those
+  four cells and does not change Status. The following
+  `frame show` returns `ask` / `set`.
+
+**Must do:**
+- Write deployment `iid`.
+- Run `python -m skore_skills frame fill` so horizon, gap, time
+  role, and generalize-to are `n/a`.
+- Do not ask another framing question before that fill.
+
+**Must NOT do:**
+- Put catalog skill ids, HITL, `G-PKG-NAME` / `G-ENV-MGR` / `G-SKORE-MODE` / `G-TABULAR` / `G-CV-SPLITTER`, or `python -m skore_skills` / `env add` in user-facing questions or the close narrative (trailing `G-REPORT-LOCATOR` / `G-AUDIT-FINDING` and unmanaged `pixi add` / `uv add` / `pip install` lines are allowed).
+- Ask for a horizon, a gap, a time-column role, or a column to
+  generalize to.
+- Say the time column is a feature, or write `covariate` or
+  `sort_key` in the time role.
+- Invent a horizon or a gap.
